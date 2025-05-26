@@ -1,0 +1,13 @@
+# Artifacts
+__pycache__
+.coverage
+
+# Misc
+issues
+.DS_Store
+
+# Home Assistant configuration
+config/*
+!config/configuration.yaml
+custom_components/*
+!custom_components/ferro_ai_companion

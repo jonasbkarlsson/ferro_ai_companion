@@ -1,0 +1,7 @@
+{
+    "name": "Ferro AI Companion",
+    "homeassistant": "2024.12.1",
+    "zip_release": true,
+    "filename": "ferro_ai_companion.zip",
+    "render_readme": true
+}

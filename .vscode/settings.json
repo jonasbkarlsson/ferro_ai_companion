@@ -1,0 +1,16 @@
+{
+    "python.defaultInterpreterPath": "/usr/local/bin/python",
+    "files.associations": {
+        "*.yaml": "home-assistant"
+    },
+    "python.testing.cwd": "/workspaces/ferro_ai_companion/tests",
+    "python.testing.pytestArgs": [
+        "--cov-report=html:cov_html",
+        "--cov=custom_components.ferro_ai_companion"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.analysis.extraPaths": [
+        "/home/vscode/.local/lib/python3.13/site-packages/homeassistant"
+    ]
+}

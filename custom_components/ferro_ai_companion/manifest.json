@@ -1,0 +1,14 @@
+{
+  "domain": "ferro_ai_companion",
+  "name": "Ferro AI Companion",
+  "codeowners": [
+    "@jonasbkarlsson"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/jonasbkarlsson/ferro_ai_companion/",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/jonasbkarlsson/ferro_ai_companion/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

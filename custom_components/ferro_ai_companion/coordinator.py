@@ -1,0 +1,514 @@
+"""Coordinator for Ferro AI Companion"""
+
+from datetime import datetime
+import logging
+from random import randint
+from homeassistant.config_entries import (
+    ConfigEntry,
+)
+
+from homeassistant.core import (
+    HomeAssistant,
+    State,
+    callback,
+    Event,
+)
+
+# try:
+#     from homeassistant.core import (  # pylint: disable=no-name-in-module, unused-import
+#         EventStateChangedData,
+#     )
+# except ImportError:
+
+#     class EventStateChangedData:
+#         """Dummy class for HA 2024.5.4 and older."""
+
+
+from homeassistant.helpers import storage
+from homeassistant.helpers.device_registry import EVENT_DEVICE_REGISTRY_UPDATED
+from homeassistant.helpers.device_registry import async_get as async_device_registry_get
+from homeassistant.helpers.device_registry import DeviceRegistry
+from homeassistant.helpers.event import (
+    async_call_later,
+    async_track_time_change,
+    async_track_state_change_event,
+)
+from homeassistant.helpers.entity_registry import (
+    async_get as async_entity_registry_get,
+)
+from homeassistant.helpers.entity_registry import (
+    EntityRegistry,
+    async_entries_for_config_entry,
+)
+from homeassistant.const import STATE_ON
+from homeassistant.util import dt
+
+from .const import (
+    CONF_EV_SOC_SENSOR,
+    CONF_EV_TARGET_SOC_SENSOR,
+    CONF_MQTT_ENTITY,
+    CONF_SETTINGS_ENTITY,
+    CONF_SOLAR_EV_CHARGING_ENABLED,
+    CONF_SOLAR_FORECAST_TODAY_REMAINING,
+    MODE_BUY,
+    MODE_PEAK_SHAVING,
+    MODE_SELF,
+    MODE_SELL,
+)
+from .helpers.general import Validator, get_parameter
+from .helpers.operation_settings import OperationSettings
+from .helpers.solar_ev_charging import SolarEVCharging
+from .sensor import (
+    FerroAICompanionSensor,
+    FerroAICompanionSensorMode,
+    FerroAICompanionSensorChargingCurrent,
+    FerroAICompanionSensorOriginalMode,
+    FerroAICompanionSensorPeakShavingTarget,
+    FerroAICompanionSensorSecondaryPeakShavingTarget,
+    FerroAICompanionSensorSolarEVCharging,
+)
+
+
+_LOGGER = logging.getLogger(__name__)
+
+
+class FerroAICompanionCoordinator:
+    """Coordinator class"""
+
+    def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+        """Initialize."""
+        self.hass = hass
+        self.config_entry = config_entry
+        self.platforms = []
+        self.listeners = []
+        self.setup_timestamp = None
+
+        self.sensor_mode = None
+        self.sensor_original_mode = None
+        self.sensor_peak_shaving_target = None
+        self.sensor_secondary_peak_shaving_target = None
+        self.sensor_charging_current = None
+        self.sensor_solar_ev_charging = None
+
+        self.switch_ev_connected = None
+        self.switch_ev_connected_previous = None
+
+        self.solar_forecast_today_remaining_entity_id = None
+        self.ev_soc_entity_id = None
+        self.ev_target_soc_entity_id = None
+
+        self.ev_soc = None
+        self.ev_target_soc = None
+        self.ev_soc_valid = False
+        self.ev_target_soc_valid = False
+
+        self.primary_peak_shaving_target_w = 0.0
+        self.secondary_peak_shaving_target_w = 0.0
+
+        self.min_charging_current = 6.0
+        self.max_charging_current = 16.0
+        self.assumed_house_consumption = 0.0
+
+        self.operation_settings = OperationSettings(
+            hass, config_entry, get_parameter(self.config_entry, CONF_SETTINGS_ENTITY)
+        )
+        self.solar_ev_charging = None
+        if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
+            self.solar_ev_charging = SolarEVCharging(
+                hass, config_entry, get_parameter(self.config_entry, CONF_MQTT_ENTITY)
+            )
+
+        # Update state once per quarter.
+        # Randomize the minute and second to avoid all instances updating at the same time.
+        y = randint(0, 1)
+        self.listeners.append(
+            async_track_time_change(
+                hass,
+                self.update_quarterly,
+                minute=[x + y for x in [4, 19, 34, 49]],
+                second=randint(0, 59),
+            )
+        )
+        # Listen for changes to the device.
+        self.listeners.append(
+            hass.bus.async_listen(EVENT_DEVICE_REGISTRY_UPDATED, self.device_updated)
+        )
+        # Update state once after intitialization
+        self.listeners.append(async_call_later(hass, 10.0, self.update_initial))
+
+    def unsubscribe_listeners(self):
+        """Unsubscribed to listeners"""
+        for unsub in self.listeners:
+            unsub()
+
+    @callback
+    async def device_updated(self, event: Event):  # pylint: disable=unused-argument
+        """Called when device is updated"""
+        _LOGGER.debug("FerroAICompanionCoordinator.device_updated()")
+        if "device_id" in event.data:
+            entity_registry: EntityRegistry = async_entity_registry_get(self.hass)
+            all_entities = async_entries_for_config_entry(
+                entity_registry, self.config_entry.entry_id
+            )
+            if all_entities:
+                device_id = all_entities[0].device_id
+                if event.data["device_id"] == device_id:
+                    if "changes" in event.data:
+                        if "name_by_user" in event.data["changes"]:
+                            # If the device name is changed, update the integration name
+                            device_registry: DeviceRegistry = async_device_registry_get(
+                                self.hass
+                            )
+                            device = device_registry.async_get(device_id)
+                            if device.name_by_user != self.config_entry.title:
+                                self.hass.config_entries.async_update_entry(
+                                    self.config_entry, title=device.name_by_user
+                                )
+
+    def is_during_intialization(self) -> bool:
+        """Checks if the integration is being intialized"""
+        # First update is done after 10 seconds, wait another 5 seconds
+        # before any EV charging is started.
+        now_timestamp = dt.now().timestamp()
+        time_since_start = now_timestamp - self.setup_timestamp
+        return time_since_start < 15
+
+    @callback
+    async def update_initial(
+        self, date_time: datetime = None
+    ):  # pylint: disable=unused-argument
+        """Called once"""
+        _LOGGER.debug("FerroAICompanionCoordinator.update_initial()")
+        await self.operation_settings.initialize()
+        await self.update_quarterly()
+        if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
+            try:
+                remaining_solar_energy_wh = (
+                    float(
+                        self.hass.states.get(
+                            self.solar_forecast_today_remaining_entity_id
+                        ).state
+                    )
+                    * 1000
+                )  # Convert kWh to Wh
+                self.solar_ev_charging.set_start_stop_soc(
+                    remaining_solar_energy_wh,
+                    self.assumed_house_consumption,
+                    self.operation_settings.max_soc,
+                )
+
+            except (ValueError, TypeError) as e:
+                _LOGGER.error("Failed to fetch remaining solar energy: %s", e)
+
+    @callback
+    async def update_quarterly(
+        self, date_time: datetime = None
+    ):  # pylint: disable=unused-argument
+        """Called every quarter"""
+        _LOGGER.debug("FerroAICompanionCoordinator.update_quarterly()")
+        await self.operation_settings.fetch_all_data()
+        if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
+            await self.solar_ev_charging.fetch_all_data()
+
+        _LOGGER.debug(
+            "self.operation_settings.discharge_threshold = %s",
+            self.operation_settings.discharge_threshold_w,
+        )
+        _LOGGER.debug(
+            "self.operation_settings.charge_threshold = %s",
+            self.operation_settings.charge_threshold_w,
+        )
+
+        if (
+            self.operation_settings.discharge_threshold_w > 0
+            and self.operation_settings.charge_threshold_w == 0
+        ):
+            self.sensor_mode.set(MODE_PEAK_SHAVING)
+            _LOGGER.debug("Mode = %s", MODE_PEAK_SHAVING)
+        elif (
+            self.operation_settings.charge_threshold_w > 0
+            and self.operation_settings.discharge_threshold_w > 0
+        ):
+            self.sensor_mode.set(MODE_BUY)
+            _LOGGER.debug("Mode = %s", MODE_BUY)
+        elif (
+            self.operation_settings.charge_threshold_w < 0
+            and self.operation_settings.discharge_threshold_w < 0
+        ):
+            self.sensor_mode.set(MODE_SELL)
+            _LOGGER.debug("Mode = %s", MODE_SELL)
+        else:
+            self.sensor_mode.set(MODE_SELF)
+            _LOGGER.debug("Mode = %s", MODE_SELF)
+
+        if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
+            if (
+                self.operation_settings.discharge_threshold_w > 0
+                and self.operation_settings.charge_threshold_w == 0
+            ):
+                self.sensor_original_mode.set(MODE_PEAK_SHAVING)
+            elif (
+                self.operation_settings.charge_threshold_w > 0
+                and self.operation_settings.discharge_threshold_w > 0
+            ):
+                self.sensor_original_mode.set(MODE_BUY)
+            elif (
+                self.operation_settings.charge_threshold_w < 0
+                and self.operation_settings.discharge_threshold_w < 0
+            ):
+                self.sensor_original_mode.set(MODE_SELL)
+            else:
+                if (
+                    self.sensor_solar_ev_charging.state == STATE_ON
+                ):  # TODO: And discharge threshold memory >= 0
+                    self.sensor_original_mode.set(MODE_PEAK_SHAVING)
+                else:
+                    self.sensor_original_mode.set(MODE_SELF)
+
+        _LOGGER.debug(
+            "self.primary_peak_shaving_target = %s", self.primary_peak_shaving_target_w
+        )
+        _LOGGER.debug(
+            "self.secondary_peak_shaving_target = %s",
+            self.secondary_peak_shaving_target_w,
+        )
+
+        if self.primary_peak_shaving_target_w == 0:
+            if self.operation_settings.discharge_threshold_w > 0:
+                self.primary_peak_shaving_target_w = (
+                    self.operation_settings.discharge_threshold_w
+                )
+        elif self.operation_settings.discharge_threshold_w > 0:
+            if (
+                0.6
+                < (
+                    self.operation_settings.discharge_threshold_w
+                    / self.primary_peak_shaving_target_w
+                )
+                < 1.4
+            ):
+                # If the new value is within 40% of the previous value, update the previous value.
+                self.primary_peak_shaving_target_w = (
+                    self.operation_settings.discharge_threshold_w
+                )
+            elif (
+                self.operation_settings.discharge_threshold_w
+                / self.primary_peak_shaving_target_w
+            ) >= 1.4:
+                # If the new value is more than 40% higher than the previous primary value,
+                # update the secondary value.
+                self.secondary_peak_shaving_target_w = (
+                    self.operation_settings.discharge_threshold_w
+                )
+            elif (
+                self.operation_settings.discharge_threshold_w
+                / self.primary_peak_shaving_target_w
+            ) <= 0.6:
+                # If the new value is more than 40% lower than the previous primaryvalue,
+                # update both primary and secondary value.
+                self.secondary_peak_shaving_target_w = (
+                    self.primary_peak_shaving_target_w
+                )
+                self.primary_peak_shaving_target_w = (
+                    self.operation_settings.discharge_threshold_w
+                )
+        self.sensor_peak_shaving_target.set(self.primary_peak_shaving_target_w)
+        self.sensor_secondary_peak_shaving_target.set(
+            self.secondary_peak_shaving_target_w
+        )
+
+        _LOGGER.debug(
+            "self.primary_peak_shaving_target = %s", self.primary_peak_shaving_target_w
+        )
+        _LOGGER.debug(
+            "self.secondary_peak_shaving_target = %s",
+            self.secondary_peak_shaving_target_w,
+        )
+
+    @callback
+    async def update_state(
+        self, date_time: datetime = None
+    ):  # pylint: disable=unused-argument
+        """Called every quarter"""
+        _LOGGER.debug("FerroAICompanionCoordinator.update_state()")
+        # if self._charging_schedule is not None:
+
+    #             await self.hass.services.async_call(
+    #                 domain=self.charger_switch.domain,
+    #                 service=SERVICE_TURN_ON,
+    #                 target={"entity_id": self.charger_switch.entity_id},
+    #             )
+
+    async def update_configuration(self):
+        """Called when the configuration has been updated"""
+        await self.update_sensors(configuration_updated=True)
+
+    @callback
+    async def update_sensors_new(
+        self,
+        event: Event,  # Event[EventStateChangedData]
+        configuration_updated: bool = False,
+    ):  # pylint: disable=unused-argument
+        """Price or EV sensors have been updated.
+        EventStateChangedData is supported from Home Assistant 2024.5.5"""
+
+        # Allowed from HA 2024.4
+        entity_id = event.data["entity_id"]
+        old_state = event.data["old_state"]
+        new_state = event.data["new_state"]
+
+        await self.update_sensors(
+            entity_id=entity_id,
+            old_state=old_state,
+            new_state=new_state,
+            configuration_updated=configuration_updated,
+        )
+
+    async def update_sensors(
+        self,
+        entity_id: str = None,
+        old_state: State = None,
+        new_state: State = None,
+        configuration_updated: bool = False,
+    ):  # pylint: disable=unused-argument
+        """Price or EV sensors have been updated."""
+
+        _LOGGER.debug("FerroAICompanionCoordinator.update_sensors()")
+        _LOGGER.debug("entity_id = %s", entity_id)
+        # _LOGGER.debug("old_state = %s", old_state)
+        _LOGGER.debug("new_state = %s", new_state)
+
+        if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
+
+            if self.ev_target_soc_entity_id and (entity_id == self.ev_soc_entity_id):
+                ev_soc_state = self.hass.states.get(self.ev_soc_entity_id)
+                if Validator.is_soc_state(ev_soc_state):
+                    self.ev_soc_valid = True
+                    self.ev_soc = float(ev_soc_state.state)
+                else:
+                    if self.ev_soc_valid:
+                        # Make only one error message per outage.
+                        _LOGGER.error("SOC sensor not valid: %s", ev_soc_state)
+                    self.ev_soc_valid = False
+
+            if len(self.ev_target_soc_entity_id) > 0 and (
+                entity_id == self.ev_target_soc_entity_id
+            ):
+                ev_target_soc_state = self.hass.states.get(self.ev_target_soc_entity_id)
+                if Validator.is_soc_state(ev_target_soc_state):
+                    self.ev_target_soc_valid = True
+                    self.ev_target_soc = float(ev_target_soc_state.state)
+                else:
+                    if self.ev_target_soc_valid:
+                        # Make only one error message per outage.
+                        _LOGGER.error(
+                            "Target SOC sensor not valid: %s", ev_target_soc_state
+                        )
+                    self.ev_target_soc_valid = False
+
+            if len(self.solar_forecast_today_remaining_entity_id) > 0 and (
+                entity_id == self.solar_forecast_today_remaining_entity_id
+            ):
+                try:
+                    remaining_solar_energy_wh = (
+                        float(
+                            self.hass.states.get(
+                                self.solar_forecast_today_remaining_entity_id
+                            ).state
+                        )
+                        * 1000
+                    )  # Convert kWh to Wh
+                    self.solar_ev_charging.set_start_stop_soc(
+                        remaining_solar_energy_wh,
+                        self.assumed_house_consumption,
+                        self.operation_settings.max_soc,
+                    )
+
+                except (ValueError, TypeError) as e:
+                    _LOGGER.error("Failed to fetch remaining solar energy: %s", e)
+
+        # await self.update_state()  # Update the charging status
+
+    async def add_sensor(self, sensors: list[FerroAICompanionSensor]):
+        """Set up sensor"""
+        for sensor in sensors:
+            if isinstance(sensor, FerroAICompanionSensorMode):
+                self.sensor_mode = sensor
+            if isinstance(sensor, FerroAICompanionSensorOriginalMode):
+                self.sensor_original_mode = sensor
+            if isinstance(sensor, FerroAICompanionSensorPeakShavingTarget):
+                self.sensor_peak_shaving_target = sensor
+            if isinstance(sensor, FerroAICompanionSensorSecondaryPeakShavingTarget):
+                self.sensor_secondary_peak_shaving_target = sensor
+            if isinstance(sensor, FerroAICompanionSensorChargingCurrent):
+                self.sensor_charging_current = sensor
+            if isinstance(sensor, FerroAICompanionSensorSolarEVCharging):
+                self.sensor_solar_ev_charging = sensor
+
+        self.ev_soc_entity_id = get_parameter(self.config_entry, CONF_EV_SOC_SENSOR)
+        self.ev_target_soc_entity_id = get_parameter(
+            self.config_entry, CONF_EV_TARGET_SOC_SENSOR
+        )
+        self.solar_forecast_today_remaining_entity_id = get_parameter(
+            self.config_entry, CONF_SOLAR_FORECAST_TODAY_REMAINING
+        )
+
+        # Assume Home Assistant 2024.6 or newer
+        if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
+            self.listeners.append(
+                async_track_state_change_event(
+                    self.hass,
+                    [
+                        self.solar_forecast_today_remaining_entity_id,
+                        self.ev_target_soc_entity_id,
+                        self.ev_soc_entity_id,
+                    ],
+                    self.update_sensors_new,
+                )
+            )
+
+        await self.update_sensors()  # TODO: Should this be removed?
+
+    async def switch_ev_connected_update(self, state: bool):
+        """Handle the EV Connected switch"""
+        self.switch_ev_connected_previous = self.switch_ev_connected
+        self.switch_ev_connected = state
+        _LOGGER.debug("switch_ev_connected_update = %s", state)
+        await self.update_configuration()
+
+    def get_entity_id_from_unique_id(self, unique_id: str) -> str:
+        """Get the Entity ID for the entity with the unique_id"""
+        entity_registry: EntityRegistry = async_entity_registry_get(self.hass)
+        all_entities = async_entries_for_config_entry(
+            entity_registry, self.config_entry.entry_id
+        )
+        entity = [entity for entity in all_entities if entity.unique_id == unique_id]
+        if len(entity) == 1:
+            return entity[0].entity_id
+
+        return None
+
+    def validate_input_sensors(self) -> str:
+        """Check that all input sensors returns values."""
+
+        if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
+
+            ev_soc = get_parameter(self.config_entry, CONF_EV_SOC_SENSOR)
+            ev_soc_state = self.hass.states.get(ev_soc)
+            if ev_soc_state is None or ev_soc_state.state is None:
+                return "Input sensors not ready."
+
+            ev_target_soc = get_parameter(self.config_entry, CONF_EV_TARGET_SOC_SENSOR)
+            if len(ev_target_soc) > 0:  # Check if the sensor exists
+                ev_target_soc_state = self.hass.states.get(ev_target_soc)
+                if ev_target_soc_state is None or ev_target_soc_state.state is None:
+                    return "Input sensors not ready."
+
+            remaining_energy = get_parameter(
+                self.config_entry, CONF_SOLAR_FORECAST_TODAY_REMAINING
+            )
+            remaining_energy_state = self.hass.states.get(remaining_energy)
+            if remaining_energy_state is None or remaining_energy_state.state is None:
+                return "Input sensors not ready."
+
+        return None

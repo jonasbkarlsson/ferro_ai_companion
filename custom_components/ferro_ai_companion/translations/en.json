@@ -1,0 +1,115 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "Configuration of name and external entities.",
+                "data": {
+                    "device_name": "Name",
+                    "settings_entity": "Any Ferroamp Operation Settings entity",
+                    "mqtt_entity": "Any Ferroamp Sensor entity",
+                    "solar_ev_charging_enabled": "Enable solar EV charging"
+                }
+            },
+            "solar": {
+                "description": "Configuration of solar EV charging.",
+                "data": {
+                    "solar_forecast_today_remaining": "Entity with today's remaining solar energy [kWh]",
+                    "ev_soc_sensor": "EV SOC entity",
+                    "ev_target_soc_sensor": "EV Target SOC entity",
+                    "number_of_phases": "Number of phases used for EV charging"
+                }
+            }
+        },
+        "error": {
+            "setting_entity_not_found": "Ferroamp Operation Setting entity noot found.",
+            "ev_soc_not_found": "EV SOC entity not found.",
+            "ev_soc_invalid_data": "The SOC entity gives invalid data.",
+            "ev_target_soc_not_found": "EV Target SOC entity not found.",
+            "ev_target_soc_invalid_data": "The Target SOC entity gives invalid data."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "description": "Configuration of external entities.",
+                "data": {
+                    "settings_entity": "Any Ferroamp Operation Settings entity",
+                    "mqtt_entity": "Any Ferroamp Sensor entity",
+                    "solar_ev_charging_enabled": "Enable solar EV charging"
+                }
+            },
+            "solar": {
+                "description": "Configuration of solar EV charging.",
+                "data": {
+                    "solar_forecast_today_remaining": "Entity with today's remaining solar energy [kWh]",
+                    "ev_soc_sensor": "EV SOC entity",
+                    "ev_target_soc_sensor": "EV Target SOC entity",
+                    "number_of_phases": "Number of phases used for EV charging"
+                }
+            }
+        },
+        "error": {
+            "setting_entity_not_found": "Ferroamp Operation Setting entity noot found.",
+            "ev_soc_not_found": "EV SOC entity not found.",
+            "ev_soc_invalid_data": "The SOC entity gives invalid data.",
+            "ev_target_soc_not_found": "EV Target SOC entity not found.",
+            "ev_target_soc_invalid_data": "The Target SOC entity gives invalid data."
+        }
+    },
+    "entity": {
+        "number": {
+            "assumed_house_consumption": { "name": "Assumed house consumption" },
+            "max_charging_current": { "name": "Maximum charging current" },
+            "min_charging_current": { "name": "Minimum charging current" }
+        },
+        "select": {
+            "charge_start_time": { "name": "Charge start time" },
+            "charge_completion_time": { "name": "Charge completion time" },
+            "phase_switch_mode": {
+                "name": "Phase switch mode",
+                "state": {
+                    "one_phase": "Use one phase",
+                    "three_phases": "Use three phases",
+                    "dynamic": "Dynamically use one or three phases"
+                }
+            }
+        },
+        "sensor": {
+            "mode": {
+                "name": "Mode",
+                "state": {
+                    "self": "Self consumption",
+                    "peak_shaving": "Peak shaving",
+                    "buy": "Buy",
+                    "sell": "Sell",
+                    "unknown": "Unknown"
+                }
+            },
+            "original_mode": {
+                "name": "Original mode",
+                "state": {
+                    "self": "Self consumption",
+                    "peak_shaving": "Peak shaving",
+                    "buy": "Buy",
+                    "sell": "Sell",
+                    "unknown": "Unknown"
+                }
+            },
+            "peak_shaving_target": {
+                "name": "Peak shaving target"
+            },
+            "secondary_peak_shaving_target": {
+                "name": "Secondary peak shaving target"
+            },
+            "solar_ev_charging": {
+                "name": "Solar EV charging"
+            },
+            "charging_current": {
+                "name": "Charging current"
+            }
+        },
+        "switch": {
+            "ev_connected": { "name": "EV connected" }
+        }
+    }
+}
