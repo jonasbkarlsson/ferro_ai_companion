@@ -9,21 +9,11 @@ from homeassistant.config_entries import (
 )
 
 from homeassistant.core import (
+    EventStateChangedData,
     HomeAssistant,
-    State,
     callback,
     Event,
 )
-
-# try:
-#     from homeassistant.core import (  # pylint: disable=no-name-in-module, unused-import
-#         EventStateChangedData,
-#     )
-# except ImportError:
-
-#     class EventStateChangedData:
-#         """Dummy class for HA 2024.5.4 and older."""
-
 
 from homeassistant.helpers import storage
 from homeassistant.helpers.device_registry import EVENT_DEVICE_REGISTRY_UPDATED
@@ -51,6 +41,7 @@ from .const import (
     CONF_SETTINGS_ENTITY,
     CONF_SOLAR_EV_CHARGING_ENABLED,
     CONF_SOLAR_FORECAST_TODAY_REMAINING,
+    ENTITY_KEY_EV_CONNECTED_SWITCH,
     MODE_BUY,
     MODE_PEAK_SHAVING,
     MODE_SELF,
@@ -385,62 +376,41 @@ class FerroAICompanionCoordinator:
             self.secondary_peak_shaving_target_w,
         )
 
-    @callback
-    async def update_state(
-        self, date_time: datetime = None
-    ):  # pylint: disable=unused-argument
-        """Called every quarter"""
-        _LOGGER.debug("FerroAICompanionCoordinator.update_state()")
-        # if self._charging_schedule is not None:
-
-    #             await self.hass.services.async_call(
-    #                 domain=self.charger_switch.domain,
-    #                 service=SERVICE_TURN_ON,
-    #                 target={"entity_id": self.charger_switch.entity_id},
-    #             )
-
-    async def update_configuration(self):
-        """Called when the configuration has been updated"""
-        await self.update_sensors(configuration_updated=True)
-
-    @callback
-    async def update_sensors_new(
+    async def entity_changed(
         self,
-        event: Event,  # Event[EventStateChangedData]
-        configuration_updated: bool = False,
-    ):  # pylint: disable=unused-argument
+        entity_id: str = None,
+        new_state=None,
+        old_state=None,
+    ):
+        """Handle entity state changes."""
+
+        state_changed_data: EventStateChangedData = {
+            "entity_id": entity_id,
+            "old_state": old_state,
+            "new_state": new_state,
+        }
+        event = Event[EventStateChangedData](event_type=None, data=state_changed_data)
+        await self.handle_state_change(event)
+
+    @callback
+    async def handle_state_change(self, event: Event[EventStateChangedData]):
         """Price or EV sensors have been updated.
         EventStateChangedData is supported from Home Assistant 2024.5.5"""
+
+        _LOGGER.debug("FerroAICompanionCoordinator.handle_state_change()")
 
         # Allowed from HA 2024.4
         entity_id = event.data["entity_id"]
         old_state = event.data["old_state"]
         new_state = event.data["new_state"]
 
-        await self.update_sensors(
-            entity_id=entity_id,
-            old_state=old_state,
-            new_state=new_state,
-            configuration_updated=configuration_updated,
-        )
-
-    async def update_sensors(
-        self,
-        entity_id: str = None,
-        old_state: State = None,
-        new_state: State = None,
-        configuration_updated: bool = False,
-    ):  # pylint: disable=unused-argument
-        """Price or EV sensors have been updated."""
-
-        _LOGGER.debug("FerroAICompanionCoordinator.update_sensors()")
         _LOGGER.debug("entity_id = %s", entity_id)
-        # _LOGGER.debug("old_state = %s", old_state)
+        _LOGGER.debug("old_state = %s", old_state)
         _LOGGER.debug("new_state = %s", new_state)
 
         if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
 
-            if self.ev_target_soc_entity_id and (entity_id == self.ev_soc_entity_id):
+            if self.ev_soc_entity_id and (entity_id == self.ev_soc_entity_id):
                 ev_soc_state = self.hass.states.get(self.ev_soc_entity_id)
                 if Validator.is_soc_state(ev_soc_state):
                     self.ev_soc_valid = True
@@ -451,7 +421,7 @@ class FerroAICompanionCoordinator:
                         _LOGGER.error("SOC sensor not valid: %s", ev_soc_state)
                     self.ev_soc_valid = False
 
-            if len(self.ev_target_soc_entity_id) > 0 and (
+            if self.ev_target_soc_entity_id and (
                 entity_id == self.ev_target_soc_entity_id
             ):
                 ev_target_soc_state = self.hass.states.get(self.ev_target_soc_entity_id)
@@ -466,7 +436,7 @@ class FerroAICompanionCoordinator:
                         )
                     self.ev_target_soc_valid = False
 
-            if len(self.solar_forecast_today_remaining_entity_id) > 0 and (
+            if self.solar_forecast_today_remaining_entity_id and (
                 entity_id == self.solar_forecast_today_remaining_entity_id
             ):
                 try:
@@ -487,8 +457,6 @@ class FerroAICompanionCoordinator:
                 except (ValueError, TypeError) as e:
                     _LOGGER.error("Failed to fetch remaining solar energy: %s", e)
 
-        # await self.update_state()  # Update the charging status
-
     async def add_sensor(self, sensors: list[FerroAICompanionSensor]):
         """Set up sensor"""
         for sensor in sensors:
@@ -505,16 +473,41 @@ class FerroAICompanionCoordinator:
             if isinstance(sensor, FerroAICompanionSensorSolarEVCharging):
                 self.sensor_solar_ev_charging = sensor
 
-        self.ev_soc_entity_id = get_parameter(self.config_entry, CONF_EV_SOC_SENSOR)
-        self.ev_target_soc_entity_id = get_parameter(
-            self.config_entry, CONF_EV_TARGET_SOC_SENSOR
-        )
-        self.solar_forecast_today_remaining_entity_id = get_parameter(
-            self.config_entry, CONF_SOLAR_FORECAST_TODAY_REMAINING
-        )
-
-        # Assume Home Assistant 2024.6 or newer
         if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
+
+            # Initialize EV SOC sensor
+            self.ev_soc_entity_id = get_parameter(self.config_entry, CONF_EV_SOC_SENSOR)
+            ev_soc_state = self.hass.states.get(self.ev_soc_entity_id)
+            if Validator.is_soc_state(ev_soc_state):
+                await self.entity_changed(
+                    self.ev_soc_entity_id, ev_soc_state.state, None
+                )
+
+            # Initialize EV Target SOC sensor
+            self.ev_target_soc_entity_id = get_parameter(
+                self.config_entry, CONF_EV_TARGET_SOC_SENSOR
+            )
+            ev_target_soc_state = self.hass.states.get(self.ev_target_soc_entity_id)
+            if Validator.is_soc_state(ev_target_soc_state):
+                await self.entity_changed(
+                    self.ev_target_soc_entity_id, ev_target_soc_state.state, None
+                )
+
+            # Initialize Solar Forecast Today Remaining sensor
+            self.solar_forecast_today_remaining_entity_id = get_parameter(
+                self.config_entry, CONF_SOLAR_FORECAST_TODAY_REMAINING
+            )
+            solar_forecast_today_remaining_state = self.hass.states.get(
+                self.solar_forecast_today_remaining_entity_id
+            )
+            if Validator.is_float(solar_forecast_today_remaining_state):
+                await self.entity_changed(
+                    self.solar_forecast_today_remaining_entity_id,
+                    solar_forecast_today_remaining_state.state,
+                    None,
+                )
+
+            # Assume Home Assistant 2024.6 or newer
             self.listeners.append(
                 async_track_state_change_event(
                     self.hass,
@@ -523,18 +516,16 @@ class FerroAICompanionCoordinator:
                         self.ev_target_soc_entity_id,
                         self.ev_soc_entity_id,
                     ],
-                    self.update_sensors_new,
+                    self.handle_state_change,
                 )
             )
-
-        await self.update_sensors()  # TODO: Should this be removed?
 
     async def switch_ev_connected_update(self, state: bool):
         """Handle the EV Connected switch"""
         self.switch_ev_connected_previous = self.switch_ev_connected
         self.switch_ev_connected = state
         _LOGGER.debug("switch_ev_connected_update = %s", state)
-        await self.update_configuration()
+        await self.entity_changed(ENTITY_KEY_EV_CONNECTED_SWITCH, not state, state)
 
     def get_entity_id_from_unique_id(self, unique_id: str) -> str:
         """Get the Entity ID for the entity with the unique_id"""

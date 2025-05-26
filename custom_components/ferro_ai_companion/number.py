@@ -93,9 +93,10 @@ class FerroAICompanionNumberMaxChargingCurrent(FerroAICompanionNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Set new value."""
+        old_value = self._attr_native_value
         await super().async_set_native_value(value)
         self.coordinator.max_charging_current = value
-        await self.coordinator.update_configuration()
+        await self.coordinator.entity_changed(self._entity_key, old_value, value)
 
 
 class FerroAICompanionNumberMinChargingCurrent(FerroAICompanionNumber):
@@ -118,9 +119,10 @@ class FerroAICompanionNumberMinChargingCurrent(FerroAICompanionNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Set new value."""
+        old_value = self._attr_native_value
         await super().async_set_native_value(value)
         self.coordinator.min_charging_current = value
-        await self.coordinator.update_configuration()
+        await self.coordinator.entity_changed(self._entity_key, old_value, value)
 
 
 class FerroAICompanionNumberAssumedHouseConsumption(FerroAICompanionNumber):
@@ -143,6 +145,7 @@ class FerroAICompanionNumberAssumedHouseConsumption(FerroAICompanionNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Set new value."""
+        old_value = self._attr_native_value
         await super().async_set_native_value(value)
         self.coordinator.assumed_house_consumption = value
-        await self.coordinator.update_configuration()
+        await self.coordinator.entity_changed(self._entity_key, old_value, value)
