@@ -23,7 +23,7 @@ The Ferro AI Companion integration will ...
 ## Installation
 
 ### HACS
-1. In Home Assistant go to HACS -> Integrations. Click on the three dots in the upper-right corner and select "Custom repositories". Paste the URL [ferroamp_operation_settings](https://github.com/jonasbkarlsson/ferro_ai_companion) into the Repository field. In Category select Integration. Click on ADD.
+1. In Home Assistant go to HACS -> Integrations. Click on the three dots in the upper-right corner and select "Custom repositories". Paste the URL [ferro_ai_companion](https://github.com/jonasbkarlsson/ferro_ai_companion) into the Repository field. In Category select Integration. Click on ADD.
 2. In Home Assistant go to HACS -> Integrations. Click on "+ Explore & Download Repositories" and search for "Ferro AI Companion".
 3. In Home Assistant go to Settings -> Devices & Services -> Integrations. Click on "+ Add integration" and search for "Ferro AI Companion".
 
