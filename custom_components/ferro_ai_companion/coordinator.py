@@ -1,5 +1,6 @@
 """Coordinator for Ferro AI Companion"""
 
+import asyncio
 from datetime import datetime
 import logging
 from random import randint
@@ -71,6 +72,13 @@ from .sensor import (
 
 _LOGGER = logging.getLogger(__name__)
 
+STORAGE_KEY = "ferro_ai_companion.coordinator"
+STORAGE_VERSION = 1
+
+
+# Global lock
+ferro_ai_companion_coordinator_lock = asyncio.Lock()
+
 
 class FerroAICompanionCoordinator:
     """Coordinator class"""
@@ -108,6 +116,8 @@ class FerroAICompanionCoordinator:
         self.min_charging_current = 6.0
         self.max_charging_current = 16.0
         self.assumed_house_consumption = 0.0
+
+        self.data_store = storage.Store(hass, STORAGE_VERSION, STORAGE_KEY)
 
         self.operation_settings = OperationSettings(
             hass, config_entry, get_parameter(self.config_entry, CONF_SETTINGS_ENTITY)
@@ -179,7 +189,21 @@ class FerroAICompanionCoordinator:
     ):  # pylint: disable=unused-argument
         """Called once"""
         _LOGGER.debug("FerroAICompanionCoordinator.update_initial()")
-        await self.operation_settings.initialize()
+        data = await self.data_store.async_load()
+        if data:
+            data = data.get(self.config_entry.entry_id)
+            if data:
+                self.primary_peak_shaving_target_w = data.get(
+                    "primary_peak_shaving_target_w", 0
+                )  # Default to 0 if not set
+                self.secondary_peak_shaving_target_w = data.get(
+                    "secondary_peak_shaving_target_w", 0
+                )  # Default to 0 if not set
+                self.sensor_peak_shaving_target.set(self.primary_peak_shaving_target_w)
+                self.sensor_secondary_peak_shaving_target.set(
+                    self.secondary_peak_shaving_target_w
+                )
+
         await self.update_quarterly()
         if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
             try:
@@ -312,6 +336,42 @@ class FerroAICompanionCoordinator:
                 self.primary_peak_shaving_target_w = (
                     self.operation_settings.discharge_threshold_w
                 )
+
+        if (
+            self.sensor_peak_shaving_target.state != self.primary_peak_shaving_target_w
+            or self.sensor_secondary_peak_shaving_target.state
+            != self.secondary_peak_shaving_target_w
+        ):
+            if (
+                self.sensor_peak_shaving_target.state
+                != self.primary_peak_shaving_target_w
+            ):
+                _LOGGER.debug(
+                    "Updating primary peak shaving target sensor from %s to %s",
+                    self.sensor_peak_shaving_target.state,
+                    self.primary_peak_shaving_target_w,
+                )
+            if (
+                self.sensor_secondary_peak_shaving_target.state
+                != self.secondary_peak_shaving_target_w
+            ):
+                _LOGGER.debug(
+                    "Updating secondary peak shaving target sensor from %s to %s",
+                    self.sensor_secondary_peak_shaving_target.state,
+                    self.secondary_peak_shaving_target_w,
+                )
+
+            async with ferro_ai_companion_coordinator_lock:
+                # Save the updated values to the data store
+                data = await self.data_store.async_load()
+                if data is None:
+                    data = {}
+                data[self.config_entry.entry_id] = {
+                    "primary_peak_shaving_target_w": self.primary_peak_shaving_target_w,
+                    "secondary_peak_shaving_target_w": self.secondary_peak_shaving_target_w,
+                }
+                await self.data_store.async_save(data)
+
         self.sensor_peak_shaving_target.set(self.primary_peak_shaving_target_w)
         self.sensor_secondary_peak_shaving_target.set(
             self.secondary_peak_shaving_target_w
