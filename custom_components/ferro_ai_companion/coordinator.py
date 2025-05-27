@@ -196,6 +196,7 @@ class FerroAICompanionCoordinator:
                 )
 
         await self.update_quarterly()
+
         if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
             try:
                 remaining_solar_energy_wh = (
@@ -376,11 +377,18 @@ class FerroAICompanionCoordinator:
             self.secondary_peak_shaving_target_w,
         )
 
+    async def switch_ev_connected_update(self, state: bool):
+        """Handle the EV Connected switch"""
+        self.switch_ev_connected_previous = self.switch_ev_connected
+        self.switch_ev_connected = state
+        _LOGGER.debug("switch_ev_connected_update = %s", state)
+        await self.entity_changed(ENTITY_KEY_EV_CONNECTED_SWITCH, not state, state)
+
     async def entity_changed(
         self,
         entity_id: str = None,
-        new_state=None,
         old_state=None,
+        new_state=None,
     ):
         """Handle entity state changes."""
 
@@ -457,6 +465,8 @@ class FerroAICompanionCoordinator:
                 except (ValueError, TypeError) as e:
                     _LOGGER.error("Failed to fetch remaining solar energy: %s", e)
 
+        # TODO: Add TRIGGERS
+
     async def add_sensor(self, sensors: list[FerroAICompanionSensor]):
         """Set up sensor"""
         for sensor in sensors:
@@ -480,7 +490,7 @@ class FerroAICompanionCoordinator:
             ev_soc_state = self.hass.states.get(self.ev_soc_entity_id)
             if Validator.is_soc_state(ev_soc_state):
                 await self.entity_changed(
-                    self.ev_soc_entity_id, ev_soc_state.state, None
+                    self.ev_soc_entity_id, None, ev_soc_state.state
                 )
 
             # Initialize EV Target SOC sensor
@@ -490,7 +500,7 @@ class FerroAICompanionCoordinator:
             ev_target_soc_state = self.hass.states.get(self.ev_target_soc_entity_id)
             if Validator.is_soc_state(ev_target_soc_state):
                 await self.entity_changed(
-                    self.ev_target_soc_entity_id, ev_target_soc_state.state, None
+                    self.ev_target_soc_entity_id, None, ev_target_soc_state.state
                 )
 
             # Initialize Solar Forecast Today Remaining sensor
@@ -503,8 +513,8 @@ class FerroAICompanionCoordinator:
             if Validator.is_float(solar_forecast_today_remaining_state):
                 await self.entity_changed(
                     self.solar_forecast_today_remaining_entity_id,
-                    solar_forecast_today_remaining_state.state,
                     None,
+                    solar_forecast_today_remaining_state.state,
                 )
 
             # Assume Home Assistant 2024.6 or newer
@@ -519,25 +529,6 @@ class FerroAICompanionCoordinator:
                     self.handle_state_change,
                 )
             )
-
-    async def switch_ev_connected_update(self, state: bool):
-        """Handle the EV Connected switch"""
-        self.switch_ev_connected_previous = self.switch_ev_connected
-        self.switch_ev_connected = state
-        _LOGGER.debug("switch_ev_connected_update = %s", state)
-        await self.entity_changed(ENTITY_KEY_EV_CONNECTED_SWITCH, not state, state)
-
-    def get_entity_id_from_unique_id(self, unique_id: str) -> str:
-        """Get the Entity ID for the entity with the unique_id"""
-        entity_registry: EntityRegistry = async_entity_registry_get(self.hass)
-        all_entities = async_entries_for_config_entry(
-            entity_registry, self.config_entry.entry_id
-        )
-        entity = [entity for entity in all_entities if entity.unique_id == unique_id]
-        if len(entity) == 1:
-            return entity[0].entity_id
-
-        return None
 
     def validate_input_sensors(self) -> str:
         """Check that all input sensors returns values."""
