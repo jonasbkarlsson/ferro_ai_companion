@@ -245,11 +245,11 @@ class FerroAICompanionCoordinator:
         )
 
         # Update the modes
-        mode = self.operation_settings.get_mode()
+        mode = await self.operation_settings.get_mode()
         self.sensor_mode.set(mode)
         _LOGGER.debug("Mode = %s", mode)
 
-        mode = self.operation_settings.get_original_mode()
+        mode = await self.operation_settings.get_original_mode()
         self.sensor_original_mode.set(mode)
         _LOGGER.debug("Original mode = %s", mode)
 

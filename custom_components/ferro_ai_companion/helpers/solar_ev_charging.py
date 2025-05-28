@@ -97,7 +97,7 @@ class SolarEVCharging:
                     self._sensor_ferroamp_total_rated_capacity_of_all_batteries
                 ).state
             )
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError, AttributeError) as e:
             _LOGGER.debug("Failed to fetch EnergyHub data: %s", e)
 
     def set_start_stop_soc(

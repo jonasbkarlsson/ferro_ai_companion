@@ -116,7 +116,7 @@ class OperationSettings:
                     update_needed = True
                 if update_needed:
                     # Restore the overridden thresholds
-                    self.update_thresholds()
+                    await self.update_thresholds()
             else:
                 # If override is not active, update both sets of values
                 self.discharge_threshold_w = discharge_threshold_w
@@ -153,23 +153,21 @@ class OperationSettings:
             self.discharge_threshold_w = -100000.0
             self.charge_threshold_w = -100000.0
 
-        self.update_thresholds()
+        await self.update_thresholds()
 
     async def stop_override(self) -> None:
         """Stop the override of operation settings."""
 
-        if self.override_active:
+        _LOGGER.debug("Fetching data.")
+        await self.fetch_all_data()
 
-            _LOGGER.debug("Fetching data.")
-            await self.fetch_all_data()
+        self.override_active = False
+        _LOGGER.debug("Stopping override.")
 
-            self.override_active = False
-            _LOGGER.debug("Stopping override.")
-
-            self.discharge_threshold_w = self.original_discharge_threshold_w
-            self.charge_threshold_w = self.original_charge_threshold_w
-
-            self.update_thresholds()
+        # Restore the original thresholds
+        self.discharge_threshold_w = self.original_discharge_threshold_w
+        self.charge_threshold_w = self.original_charge_threshold_w
+        await self.update_thresholds()
 
     async def update_thresholds(self) -> None:
         """Update the thresholds."""
