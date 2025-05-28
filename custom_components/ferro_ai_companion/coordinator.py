@@ -484,6 +484,14 @@ class FerroAICompanionCoordinator:
                 ):
                     # If all override switches are off, reset the operation settings
                     await self.operation_settings.stop_override()
+            # Update the modes
+            mode = await self.operation_settings.get_mode()
+            self.sensor_mode.set(mode)
+            _LOGGER.debug("Mode = %s", mode)
+
+            mode = await self.operation_settings.get_original_mode()
+            self.sensor_original_mode.set(mode)
+            _LOGGER.debug("Original mode = %s", mode)
 
         # Handle triggers
         # TODO: Add TRIGGERS

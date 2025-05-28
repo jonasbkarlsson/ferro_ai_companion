@@ -7,11 +7,10 @@ import logging
 from homeassistant.config_entries import (
     ConfigEntry,
 )
-
 from homeassistant.core import (
     HomeAssistant,
 )
-
+from homeassistant.exceptions import ServiceNotFound
 from homeassistant.helpers.entity_registry import (
     RegistryEntry,
     async_get as async_entity_registry_get,
@@ -19,6 +18,7 @@ from homeassistant.helpers.entity_registry import (
 from homeassistant.helpers.entity_registry import (
     EntityRegistry,
 )
+
 
 from ..const import (
     ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH,
@@ -85,13 +85,20 @@ class OperationSettings:
     async def fetch_all_data(self) -> None:
         """Fetch all operation settings data."""
 
-        #        self._hass.services.call('button', 'press', {'entity_id': self.button_get_data})
-
-        await self._hass.services.async_call(
-            domain="button",
-            service="press",
-            target={"entity_id": self._button_get_data},
-        )
+        try:
+            await self._hass.services.async_call(
+                domain="button",
+                service="press",
+                target={"entity_id": self._button_get_data},
+            )
+        except ServiceNotFound as e:
+            _LOGGER.debug("Service not found: %s", e)
+            await asyncio.sleep(5)  # Wait a while and try again
+            await self._hass.services.async_call(
+                domain="button",
+                service="press",
+                target={"entity_id": self._button_get_data},
+            )
 
         await asyncio.sleep(5)  # Wait for the data to be fetched
 
