@@ -229,65 +229,31 @@ class FerroAICompanionCoordinator:
     ):  # pylint: disable=unused-argument
         """Called every quarter"""
         _LOGGER.debug("FerroAICompanionCoordinator.update_quarterly()")
+
+        # Fetch data
         await self.operation_settings.fetch_all_data()
         if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
             await self.solar_ev_charging.fetch_all_data()
 
         _LOGGER.debug(
-            "self.operation_settings.discharge_threshold = %s",
-            self.operation_settings.discharge_threshold_w,
+            "self.operation_settings.original_discharge_threshold = %s",
+            self.operation_settings.original_discharge_threshold_w,
         )
         _LOGGER.debug(
-            "self.operation_settings.charge_threshold = %s",
-            self.operation_settings.charge_threshold_w,
+            "self.operation_settings.original_charge_threshold = %s",
+            self.operation_settings.original_charge_threshold_w,
         )
 
-        if (
-            self.operation_settings.discharge_threshold_w > 0
-            and self.operation_settings.charge_threshold_w == 0
-        ):
-            self.sensor_mode.set(MODE_PEAK_SHAVING)
-            _LOGGER.debug("Mode = %s", MODE_PEAK_SHAVING)
-        elif (
-            self.operation_settings.charge_threshold_w > 0
-            and self.operation_settings.discharge_threshold_w > 0
-        ):
-            self.sensor_mode.set(MODE_BUY)
-            _LOGGER.debug("Mode = %s", MODE_BUY)
-        elif (
-            self.operation_settings.charge_threshold_w < 0
-            and self.operation_settings.discharge_threshold_w < 0
-        ):
-            self.sensor_mode.set(MODE_SELL)
-            _LOGGER.debug("Mode = %s", MODE_SELL)
-        else:
-            self.sensor_mode.set(MODE_SELF)
-            _LOGGER.debug("Mode = %s", MODE_SELF)
+        # Update the modes
+        mode = self.operation_settings.get_mode()
+        self.sensor_mode.set(mode)
+        _LOGGER.debug("Mode = %s", mode)
 
-        if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
-            if (
-                self.operation_settings.discharge_threshold_w > 0
-                and self.operation_settings.charge_threshold_w == 0
-            ):
-                self.sensor_original_mode.set(MODE_PEAK_SHAVING)
-            elif (
-                self.operation_settings.charge_threshold_w > 0
-                and self.operation_settings.discharge_threshold_w > 0
-            ):
-                self.sensor_original_mode.set(MODE_BUY)
-            elif (
-                self.operation_settings.charge_threshold_w < 0
-                and self.operation_settings.discharge_threshold_w < 0
-            ):
-                self.sensor_original_mode.set(MODE_SELL)
-            else:
-                if (
-                    self.sensor_solar_ev_charging.state == STATE_ON
-                ):  # TODO: And discharge threshold memory >= 0
-                    self.sensor_original_mode.set(MODE_PEAK_SHAVING)
-                else:
-                    self.sensor_original_mode.set(MODE_SELF)
+        mode = self.operation_settings.get_original_mode()
+        self.sensor_original_mode.set(mode)
+        _LOGGER.debug("Original mode = %s", mode)
 
+        # Update the peak shaving targets
         _LOGGER.debug(
             "self.primary_peak_shaving_target = %s", self.primary_peak_shaving_target_w
         )
@@ -297,34 +263,34 @@ class FerroAICompanionCoordinator:
         )
 
         if self.primary_peak_shaving_target_w == 0:
-            if self.operation_settings.discharge_threshold_w > 0:
+            if self.operation_settings.original_discharge_threshold_w > 0:
                 self.primary_peak_shaving_target_w = (
-                    self.operation_settings.discharge_threshold_w
+                    self.operation_settings.original_discharge_threshold_w
                 )
-        elif self.operation_settings.discharge_threshold_w > 0:
+        elif self.operation_settings.original_discharge_threshold_w > 0:
             if (
                 0.6
                 < (
-                    self.operation_settings.discharge_threshold_w
+                    self.operation_settings.original_discharge_threshold_w
                     / self.primary_peak_shaving_target_w
                 )
                 < 1.4
             ):
                 # If the new value is within 40% of the previous value, update the previous value.
                 self.primary_peak_shaving_target_w = (
-                    self.operation_settings.discharge_threshold_w
+                    self.operation_settings.original_discharge_threshold_w
                 )
             elif (
-                self.operation_settings.discharge_threshold_w
+                self.operation_settings.original_discharge_threshold_w
                 / self.primary_peak_shaving_target_w
             ) >= 1.4:
                 # If the new value is more than 40% higher than the previous primary value,
                 # update the secondary value.
                 self.secondary_peak_shaving_target_w = (
-                    self.operation_settings.discharge_threshold_w
+                    self.operation_settings.original_discharge_threshold_w
                 )
             elif (
-                self.operation_settings.discharge_threshold_w
+                self.operation_settings.original_discharge_threshold_w
                 / self.primary_peak_shaving_target_w
             ) <= 0.6:
                 # If the new value is more than 40% lower than the previous primaryvalue,
@@ -333,9 +299,10 @@ class FerroAICompanionCoordinator:
                     self.primary_peak_shaving_target_w
                 )
                 self.primary_peak_shaving_target_w = (
-                    self.operation_settings.discharge_threshold_w
+                    self.operation_settings.original_discharge_threshold_w
                 )
 
+        # Update the peak shaving target sensors if they are not equal to the current values.
         if (
             self.sensor_peak_shaving_target.state != self.primary_peak_shaving_target_w
             or self.sensor_secondary_peak_shaving_target.state
@@ -371,10 +338,10 @@ class FerroAICompanionCoordinator:
                 }
                 await self.data_store.async_save(data)
 
-        self.sensor_peak_shaving_target.set(self.primary_peak_shaving_target_w)
-        self.sensor_secondary_peak_shaving_target.set(
-            self.secondary_peak_shaving_target_w
-        )
+            self.sensor_peak_shaving_target.set(self.primary_peak_shaving_target_w)
+            self.sensor_secondary_peak_shaving_target.set(
+                self.secondary_peak_shaving_target_w
+            )
 
         _LOGGER.debug(
             "self.primary_peak_shaving_target = %s", self.primary_peak_shaving_target_w
