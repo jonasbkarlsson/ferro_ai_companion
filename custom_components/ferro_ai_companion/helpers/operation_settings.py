@@ -20,6 +20,13 @@ from homeassistant.helpers.entity_registry import (
     EntityRegistry,
 )
 
+from ..const import (
+    ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH,
+    ENTITY_KEY_AVOID_IMPORT_SWITCH,
+    ENTITY_KEY_FORCE_BUYING_SWITCH,
+    ENTITY_KEY_FORCE_SELLING_SWITCH,
+)
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -42,6 +49,10 @@ class OperationSettings:
         self.discharge_threshold_w = 0
         self.charge_threshold_w = 0
         self.max_soc = -1.0  # -1 means not set
+
+        self.override_active = False
+        self.original_discharge_threshold_w = 0
+        self.original_charge_threshold_w = 0
 
         if entity_id:
             entity_registry: EntityRegistry = async_entity_registry_get(hass)
@@ -93,9 +104,105 @@ class OperationSettings:
                 or self.charge_threshold_w != charge_threshold_w
                 or self.max_soc != max_soc
             ):
-                self.discharge_threshold_w = discharge_threshold_w
-                self.charge_threshold_w = charge_threshold_w
                 self.max_soc = max_soc
+                # TODO: Make sure "original" is always updated. Update in update_quarterly, if needed.
+                # TODO: Restore thresholds if override is active, and FerroAI changes them.
+                # TODO: If primary_peak_shaving_threshold is zero, use 1000 for "force buying".
+                if self.override_active:
+                    # If override is active, keep the original values, if they have changed
+                    if discharge_threshold_w != self.discharge_threshold_w:
+                        self.original_discharge_threshold_w = discharge_threshold_w
+                    if charge_threshold_w != self.charge_threshold_w:
+                        self.original_charge_threshold_w = charge_threshold_w
+                else:
+                    # Update the current values
+                    self.discharge_threshold_w = discharge_threshold_w
+                    self.charge_threshold_w = charge_threshold_w
 
         except (ValueError, TypeError) as e:
             _LOGGER.error("Failed to fetch operation settings data: %s", e)
+
+    async def override(self, entity: str, peak_shaving_threshold: float) -> None:
+        """Override the operation settings."""
+
+        _LOGGER.debug("Fetching data.")
+        await self.fetch_all_data()
+
+        if not self.override_active:
+            self.original_discharge_threshold_w = self.discharge_threshold_w
+            self.original_charge_threshold_w = self.charge_threshold_w
+            self.override_active = True
+
+        if entity == ENTITY_KEY_AVOID_IMPORT_SWITCH:
+            self.discharge_threshold_w = 0
+            self.charge_threshold_w = 0
+        if entity == ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH:
+            self.discharge_threshold_w = peak_shaving_threshold
+            self.charge_threshold_w = 0
+        if entity == ENTITY_KEY_FORCE_BUYING_SWITCH:
+            self.discharge_threshold_w = peak_shaving_threshold
+            self.charge_threshold_w = peak_shaving_threshold
+        if entity == ENTITY_KEY_FORCE_SELLING_SWITCH:
+            self.discharge_threshold_w = -100000.0
+            self.charge_threshold_w = -100000.0
+
+        _LOGGER.debug("self.discharge_threshold_w = %s", self.discharge_threshold_w)
+        _LOGGER.debug("self.charge_threshold_w = %s", self.charge_threshold_w)
+
+        await self._hass.services.async_call(
+            domain="number",
+            service="set_value",
+            service_data={"value": self.discharge_threshold_w},
+            target={"entity_id": self._number_discharge_threshold},
+        )
+        await self._hass.services.async_call(
+            domain="number",
+            service="set_value",
+            service_data={"value": self.charge_threshold_w},
+            target={"entity_id": self._number_charge_threshold},
+        )
+        await self._hass.services.async_call(
+            domain="button",
+            service="press",
+            target={"entity_id": self._button_update},
+        )
+
+    async def stop_override(self) -> None:
+        """Stop the override of operation settings."""
+
+        if self.override_active:
+
+            _LOGGER.debug("Fetching data.")
+            await self.fetch_all_data()
+
+            self.override_active = False
+            _LOGGER.debug("Stopping override.")
+            _LOGGER.debug(
+                "self.original_discharge_threshold_w = %s",
+                self.original_discharge_threshold_w,
+            )
+            _LOGGER.debug(
+                "self.original_charge_threshold_w = %s",
+                self.original_charge_threshold_w,
+            )
+
+            self.discharge_threshold_w = self.original_discharge_threshold_w
+            self.charge_threshold_w = self.original_charge_threshold_w
+
+            await self._hass.services.async_call(
+                domain="number",
+                service="set_value",
+                service_data={"value": self.discharge_threshold_w},
+                target={"entity_id": self._number_discharge_threshold},
+            )
+            await self._hass.services.async_call(
+                domain="number",
+                service="set_value",
+                service_data={"value": self.charge_threshold_w},
+                target={"entity_id": self._number_charge_threshold},
+            )
+            await self._hass.services.async_call(
+                domain="button",
+                service="press",
+                target={"entity_id": self._button_update},
+            )

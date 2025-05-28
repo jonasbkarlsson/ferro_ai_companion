@@ -41,7 +41,11 @@ from .const import (
     CONF_SETTINGS_ENTITY,
     CONF_SOLAR_EV_CHARGING_ENABLED,
     CONF_SOLAR_FORECAST_TODAY_REMAINING,
+    ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH,
+    ENTITY_KEY_AVOID_IMPORT_SWITCH,
     ENTITY_KEY_EV_CONNECTED_SWITCH,
+    ENTITY_KEY_FORCE_BUYING_SWITCH,
+    ENTITY_KEY_FORCE_SELLING_SWITCH,
     MODE_BUY,
     MODE_PEAK_SHAVING,
     MODE_SELF,
@@ -90,7 +94,10 @@ class FerroAICompanionCoordinator:
         self.sensor_solar_ev_charging = None
 
         self.switch_ev_connected = None
-        self.switch_ev_connected_previous = None
+        self.switch_avoid_import = None
+        self.switch_avoid_battery_usage = None
+        self.switch_force_buying = None
+        self.switch_force_selling = None
 
         self.solar_forecast_today_remaining_entity_id = None
         self.ev_soc_entity_id = None
@@ -185,10 +192,10 @@ class FerroAICompanionCoordinator:
             data = data.get(self.config_entry.entry_id)
             if data:
                 self.primary_peak_shaving_target_w = data.get(
-                    "primary_peak_shaving_target_w", 0
+                    "primary_peak_shaving_target_w", 0.0
                 )  # Default to 0 if not set
                 self.secondary_peak_shaving_target_w = data.get(
-                    "secondary_peak_shaving_target_w", 0
+                    "secondary_peak_shaving_target_w", 0.0
                 )  # Default to 0 if not set
                 self.sensor_peak_shaving_target.set(self.primary_peak_shaving_target_w)
                 self.sensor_secondary_peak_shaving_target.set(
@@ -379,12 +386,37 @@ class FerroAICompanionCoordinator:
 
     async def switch_ev_connected_update(self, state: bool):
         """Handle the EV Connected switch"""
-        self.switch_ev_connected_previous = self.switch_ev_connected
         self.switch_ev_connected = state
         _LOGGER.debug("switch_ev_connected_update = %s", state)
-        await self.entity_changed(ENTITY_KEY_EV_CONNECTED_SWITCH, not state, state)
+        await self.generate_event(ENTITY_KEY_EV_CONNECTED_SWITCH, not state, state)
 
-    async def entity_changed(
+    async def switch_avoid_import_update(self, state: bool):
+        """Handle the Avoid Import switch"""
+        self.switch_avoid_import = state
+        _LOGGER.debug("switch_avoid_import_update = %s", state)
+        await self.generate_event(ENTITY_KEY_AVOID_IMPORT_SWITCH, not state, state)
+
+    async def switch_avoid_battery_usage_update(self, state: bool):
+        """Handle the Avoid Battery Usage switch"""
+        self.switch_avoid_battery_usage = state
+        _LOGGER.debug("switch_avoid_battery_usage_update = %s", state)
+        await self.generate_event(
+            ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH, not state, state
+        )
+
+    async def switch_force_buying_update(self, state: bool):
+        """Handle the Force Buying switch"""
+        self.switch_force_buying = state
+        _LOGGER.debug("switch_force_buying_update = %s", state)
+        await self.generate_event(ENTITY_KEY_FORCE_BUYING_SWITCH, not state, state)
+
+    async def switch_force_selling_update(self, state: bool):
+        """Handle the Force Selling switch"""
+        self.switch_force_selling = state
+        _LOGGER.debug("switch_force_selling_update = %s", state)
+        await self.generate_event(ENTITY_KEY_FORCE_SELLING_SWITCH, not state, state)
+
+    async def generate_event(
         self,
         entity_id: str = None,
         old_state=None,
@@ -398,11 +430,11 @@ class FerroAICompanionCoordinator:
             "new_state": new_state,
         }
         event = Event[EventStateChangedData](event_type=None, data=state_changed_data)
-        await self.handle_state_change(event)
+        await self.handle_events(event)
 
     @callback
-    async def handle_state_change(self, event: Event[EventStateChangedData]):
-        """Price or EV sensors have been updated.
+    async def handle_events(self, event: Event[EventStateChangedData]):
+        """Handle state change events.
         EventStateChangedData is supported from Home Assistant 2024.5.5"""
 
         _LOGGER.debug("FerroAICompanionCoordinator.handle_state_change()")
@@ -465,6 +497,28 @@ class FerroAICompanionCoordinator:
                 except (ValueError, TypeError) as e:
                     _LOGGER.error("Failed to fetch remaining solar energy: %s", e)
 
+        # Handle override switches
+        if entity_id in [
+            ENTITY_KEY_AVOID_IMPORT_SWITCH,
+            ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH,
+            ENTITY_KEY_FORCE_BUYING_SWITCH,
+            ENTITY_KEY_FORCE_SELLING_SWITCH,
+        ]:
+            if new_state is True:
+                await self.operation_settings.override(
+                    entity_id, self.primary_peak_shaving_target_w
+                )
+            else:
+                if (
+                    self.switch_avoid_battery_usage is False
+                    and self.switch_avoid_import is False
+                    and self.switch_force_buying is False
+                    and self.switch_force_selling is False
+                ):
+                    # If all override switches are off, reset the operation settings
+                    await self.operation_settings.stop_override()
+
+        # Handle triggers
         # TODO: Add TRIGGERS
 
     async def add_sensor(self, sensors: list[FerroAICompanionSensor]):
@@ -489,7 +543,7 @@ class FerroAICompanionCoordinator:
             self.ev_soc_entity_id = get_parameter(self.config_entry, CONF_EV_SOC_SENSOR)
             ev_soc_state = self.hass.states.get(self.ev_soc_entity_id)
             if Validator.is_soc_state(ev_soc_state):
-                await self.entity_changed(
+                await self.generate_event(
                     self.ev_soc_entity_id, None, ev_soc_state.state
                 )
 
@@ -499,7 +553,7 @@ class FerroAICompanionCoordinator:
             )
             ev_target_soc_state = self.hass.states.get(self.ev_target_soc_entity_id)
             if Validator.is_soc_state(ev_target_soc_state):
-                await self.entity_changed(
+                await self.generate_event(
                     self.ev_target_soc_entity_id, None, ev_target_soc_state.state
                 )
 
@@ -511,7 +565,7 @@ class FerroAICompanionCoordinator:
                 self.solar_forecast_today_remaining_entity_id
             )
             if Validator.is_float(solar_forecast_today_remaining_state):
-                await self.entity_changed(
+                await self.generate_event(
                     self.solar_forecast_today_remaining_entity_id,
                     None,
                     solar_forecast_today_remaining_state.state,
@@ -526,7 +580,7 @@ class FerroAICompanionCoordinator:
                         self.ev_target_soc_entity_id,
                         self.ev_soc_entity_id,
                     ],
-                    self.handle_state_change,
+                    self.handle_events,
                 )
             )
 

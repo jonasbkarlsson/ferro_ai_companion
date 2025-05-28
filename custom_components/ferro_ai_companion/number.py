@@ -96,7 +96,7 @@ class FerroAICompanionNumberMaxChargingCurrent(FerroAICompanionNumber):
         old_value = self._attr_native_value
         await super().async_set_native_value(value)
         self.coordinator.max_charging_current = value
-        await self.coordinator.entity_changed(self._entity_key, old_value, value)
+        await self.coordinator.generate_event(self._entity_key, old_value, value)
 
 
 class FerroAICompanionNumberMinChargingCurrent(FerroAICompanionNumber):
@@ -122,7 +122,7 @@ class FerroAICompanionNumberMinChargingCurrent(FerroAICompanionNumber):
         old_value = self._attr_native_value
         await super().async_set_native_value(value)
         self.coordinator.min_charging_current = value
-        await self.coordinator.entity_changed(self._entity_key, old_value, value)
+        await self.coordinator.generate_event(self._entity_key, old_value, value)
 
 
 class FerroAICompanionNumberAssumedHouseConsumption(FerroAICompanionNumber):
@@ -148,4 +148,4 @@ class FerroAICompanionNumberAssumedHouseConsumption(FerroAICompanionNumber):
         old_value = self._attr_native_value
         await super().async_set_native_value(value)
         self.coordinator.assumed_house_consumption = value
-        await self.coordinator.entity_changed(self._entity_key, old_value, value)
+        await self.coordinator.generate_event(self._entity_key, old_value, value)
