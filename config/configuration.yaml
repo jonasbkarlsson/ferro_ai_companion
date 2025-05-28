@@ -1,6 +1,7 @@
 #default_config:
 sun:
 config:
+history:
 
 automation: !include automations.yaml
 
