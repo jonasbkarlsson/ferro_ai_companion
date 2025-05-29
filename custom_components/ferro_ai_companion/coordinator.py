@@ -132,15 +132,15 @@ class FerroAICompanionCoordinator:
             self.solar_ev_charging = SolarEVCharging(
                 hass, config_entry, get_parameter(self.config_entry, CONF_MQTT_ENTITY)
             )
-            self.listeners.append(
-                async_track_state_change_event(
-                    self.hass,
-                    [
-                        self.solar_ev_charging.sensor_ferroamp_system_state_of_charge,
-                    ],
-                    self.handle_events,
-                )
-            )
+            # self.listeners.append(
+            #     async_track_state_change_event(
+            #         self.hass,
+            #         [
+            #             self.solar_ev_charging.sensor_ferroamp_system_state_of_charge,
+            #         ],
+            #         self.handle_events,
+            #     )
+            # )
 
         # Update state once per quarter.
         # Randomize the minute and second to avoid all instances updating at the same time.
@@ -154,14 +154,14 @@ class FerroAICompanionCoordinator:
             )
         )
         # Generate triggers every 5 minutes.
-        self.listeners.append(
-            async_track_time_change(
-                hass,
-                self.update_every_five_minutes,
-                minute=[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
-                second=0,
-            )
-        )
+        # self.listeners.append(
+        #     async_track_time_change(
+        #         hass,
+        #         self.update_every_five_minutes,
+        #         minute=[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
+        #         second=0,
+        #     )
+        # )
         # Listen for changes to the device.
         self.listeners.append(
             hass.bus.async_listen(EVENT_DEVICE_REGISTRY_UPDATED, self.device_updated)
