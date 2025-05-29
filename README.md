@@ -12,6 +12,8 @@
 
 The Ferro AI Companion integration works on top of Ferro AI from Ferroamp. It provides observation of what Ferro AI does and possibilities to override the Ferro AI function.
 
+It might take up to 24 hours until the integration has learned the peak shaving thresholds used by Ferro AI. After that, changes to the thresholds will be tracked continously.
+
 ## Requirements
 - Home Assistant version 2024.12 or newer.
 - [Ferroamp Operation Settings](https://github.com/jonasbkarlsson/ferroamp_operation_settings) integration.
