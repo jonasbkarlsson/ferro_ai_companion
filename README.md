@@ -10,7 +10,7 @@
 
 ![Icon](assets/logo.png)
 
-The Ferro AI Companion integration works on top of Ferro AI from Ferroamp. It provides observation of what Ferro AO does and possibilities to override the Ferro AI function.
+The Ferro AI Companion integration works on top of Ferro AI from Ferroamp. It provides observation of what Ferro AI does and possibilities to override the Ferro AI function.
 
 ## Requirements
 - Home Assistant version 2024.12 or newer.
