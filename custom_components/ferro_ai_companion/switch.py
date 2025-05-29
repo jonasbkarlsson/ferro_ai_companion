@@ -112,6 +112,7 @@ class FerroAICompanionSwitchAvoidImport(FerroAICompanionSwitch):
             self._attr_is_on = False
             self.update_ha_state()
         self.coordinator.switch_avoid_import = self.is_on
+        self.coordinator.switch_avoid_import_unique_id = self._attr_unique_id
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the entity on."""
@@ -137,6 +138,7 @@ class FerroAICompanionSwitchAvoidBatteryUsage(FerroAICompanionSwitch):
             self._attr_is_on = False
             self.update_ha_state()
         self.coordinator.switch_avoid_battery_usage = self.is_on
+        self.coordinator.switch_avoid_battery_usage_unique_id = self._attr_unique_id
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the entity on."""
@@ -162,6 +164,7 @@ class FerroAICompanionSwitchForceBuying(FerroAICompanionSwitch):
             self._attr_is_on = False
             self.update_ha_state()
         self.coordinator.switch_force_buying = self.is_on
+        self.coordinator.switch_force_buying_unique_id = self._attr_unique_id
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the entity on."""
@@ -187,6 +190,7 @@ class FerroAICompanionSwitchForceSelling(FerroAICompanionSwitch):
             self._attr_is_on = False
             self.update_ha_state()
         self.coordinator.switch_force_selling = self.is_on
+        self.coordinator.switch_force_selling_unique_id = self._attr_unique_id
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the entity on."""

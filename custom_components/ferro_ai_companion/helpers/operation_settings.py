@@ -93,6 +93,7 @@ class OperationSettings:
             )
         except ServiceNotFound as e:
             _LOGGER.debug("Service not found: %s", e)
+            # Could happen after HA restart if the button entity is not yet available
             await asyncio.sleep(5)  # Wait a while and try again
             await self._hass.services.async_call(
                 domain="button",
@@ -100,7 +101,7 @@ class OperationSettings:
                 target={"entity_id": self._button_get_data},
             )
 
-        await asyncio.sleep(5)  # Wait for the data to be fetched
+        await asyncio.sleep(4)  # Wait for the data to be fetched
 
         try:
             discharge_threshold_w = float(
