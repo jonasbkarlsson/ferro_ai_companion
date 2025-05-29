@@ -40,11 +40,9 @@ from .const import (
     CONF_SETTINGS_ENTITY,
     CONF_SOLAR_EV_CHARGING_ENABLED,
     CONF_SOLAR_FORECAST_TODAY_REMAINING,
-    ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH,
-    ENTITY_KEY_AVOID_IMPORT_SWITCH,
     ENTITY_KEY_EV_CONNECTED_SWITCH,
-    ENTITY_KEY_FORCE_BUYING_SWITCH,
-    ENTITY_KEY_FORCE_SELLING_SWITCH,
+    ENTITY_KEY_COMPANION_MODE_SELECT,
+    MODE_AUTO,
 )
 from .helpers.general import Validator, get_parameter
 from .helpers.operation_settings import OperationSettings
@@ -89,22 +87,6 @@ class FerroAICompanionCoordinator:
         self.sensor_solar_ev_charging = None
 
         self.switch_ev_connected = None
-
-        self.switch_avoid_import = None
-        self.switch_avoid_import_entity_id = None
-        self.switch_avoid_import_unique_id = None
-
-        self.switch_avoid_battery_usage = None
-        self.switch_avoid_battery_usage_entity_id = None
-        self.switch_avoid_battery_usage_unique_id = None
-
-        self.switch_force_buying = None
-        self.switch_force_buying_entity_id = None
-        self.switch_force_buying_unique_id = None
-
-        self.switch_force_selling = None
-        self.switch_force_selling_entity_id = None
-        self.switch_force_selling_unique_id = None
 
         self.solar_forecast_today_remaining_entity_id = None
         self.ev_soc_entity_id = None
@@ -391,46 +373,6 @@ class FerroAICompanionCoordinator:
         _LOGGER.debug("switch_ev_connected_update = %s", state)
         await self.generate_event(ENTITY_KEY_EV_CONNECTED_SWITCH, not state, state)
 
-    async def switch_avoid_import_update(self, state: bool):
-        """Handle the Avoid Import switch"""
-        self.switch_avoid_import = state
-        _LOGGER.debug("switch_avoid_import_update = %s", state)
-        self.get_all_entity_ids()
-        await self.generate_event(ENTITY_KEY_AVOID_IMPORT_SWITCH, not state, state)
-        if state is True:
-            await self.turn_off_other_switches(self.switch_avoid_import_entity_id)
-
-    async def switch_avoid_battery_usage_update(self, state: bool):
-        """Handle the Avoid Battery Usage switch"""
-        self.switch_avoid_battery_usage = state
-        _LOGGER.debug("switch_avoid_battery_usage_update = %s", state)
-        self.get_all_entity_ids()
-        await self.generate_event(
-            ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH, not state, state
-        )
-        if state is True:
-            await self.turn_off_other_switches(
-                self.switch_avoid_battery_usage_entity_id
-            )
-
-    async def switch_force_buying_update(self, state: bool):
-        """Handle the Force Buying switch"""
-        self.switch_force_buying = state
-        _LOGGER.debug("switch_force_buying_update = %s", state)
-        self.get_all_entity_ids()
-        await self.generate_event(ENTITY_KEY_FORCE_BUYING_SWITCH, not state, state)
-        if state is True:
-            await self.turn_off_other_switches(self.switch_force_buying_entity_id)
-
-    async def switch_force_selling_update(self, state: bool):
-        """Handle the Force Selling switch"""
-        self.switch_force_selling = state
-        _LOGGER.debug("switch_force_selling_update = %s", state)
-        self.get_all_entity_ids()
-        await self.generate_event(ENTITY_KEY_FORCE_SELLING_SWITCH, not state, state)
-        if state is True:
-            await self.turn_off_other_switches(self.switch_force_selling_entity_id)
-
     async def generate_event(
         self,
         entity_id: str = None,
@@ -513,26 +455,15 @@ class FerroAICompanionCoordinator:
                 except (ValueError, TypeError) as e:
                     _LOGGER.error("Failed to fetch remaining solar energy: %s", e)
 
-        # Handle override switches
-        if entity_id in [
-            ENTITY_KEY_AVOID_IMPORT_SWITCH,
-            ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH,
-            ENTITY_KEY_FORCE_BUYING_SWITCH,
-            ENTITY_KEY_FORCE_SELLING_SWITCH,
-        ]:
-            if new_state is True:
-                await self.operation_settings.override(
-                    entity_id, self.primary_peak_shaving_target_w
-                )
+        # Handle compansion mode select
+        if entity_id == ENTITY_KEY_COMPANION_MODE_SELECT:
+            if new_state == MODE_AUTO:
+                await self.operation_settings.stop_override()
             else:
-                if (
-                    self.switch_avoid_battery_usage is False
-                    and self.switch_avoid_import is False
-                    and self.switch_force_buying is False
-                    and self.switch_force_selling is False
-                ):
-                    # If all override switches are off, reset the operation settings
-                    await self.operation_settings.stop_override()
+                await self.operation_settings.override(
+                    new_state, self.primary_peak_shaving_target_w
+                )
+
             # Update the modes
             mode = await self.operation_settings.get_mode()
             self.sensor_mode.set(mode)
@@ -616,76 +547,6 @@ class FerroAICompanionCoordinator:
                     ],
                     self.handle_events,
                 )
-            )
-
-    def get_entity_id_from_unique_id(self, unique_id: str) -> str:
-        """Get the Entity ID for the entity with the unique_id"""
-        entity_registry: EntityRegistry = async_entity_registry_get(self.hass)
-        all_entities = async_entries_for_config_entry(
-            entity_registry, self.config_entry.entry_id
-        )
-        entity = [entity for entity in all_entities if entity.unique_id == unique_id]
-        if len(entity) == 1:
-            return entity[0].entity_id
-
-        return None
-
-    def get_all_entity_ids(self):
-        """Get all entity ids from unique ids"""
-
-        if self.switch_avoid_import_entity_id is None:
-            self.switch_avoid_import_entity_id = self.get_entity_id_from_unique_id(
-                self.switch_avoid_import_unique_id
-            )
-        if self.switch_avoid_battery_usage_entity_id is None:
-            self.switch_avoid_battery_usage_entity_id = (
-                self.get_entity_id_from_unique_id(
-                    self.switch_avoid_battery_usage_unique_id
-                )
-            )
-        if self.switch_force_buying_entity_id is None:
-            self.switch_force_buying_entity_id = self.get_entity_id_from_unique_id(
-                self.switch_force_buying_unique_id
-            )
-        if self.switch_force_selling_entity_id is None:
-            self.switch_force_selling_entity_id = self.get_entity_id_from_unique_id(
-                self.switch_force_selling_unique_id
-            )
-
-    async def turn_off_other_switches(self, entity_id: str):
-        """Turn off all other switches except the one with the given entity_id."""
-        _LOGGER.debug("Turning off other switches except %s", entity_id)
-        if self.switch_avoid_import_entity_id and (
-            self.switch_avoid_import_entity_id != entity_id
-        ):
-            await self.hass.services.async_call(
-                "switch",
-                "turn_off",
-                {"entity_id": self.switch_avoid_import_entity_id},
-            )
-        if self.switch_avoid_battery_usage_entity_id and (
-            self.switch_avoid_battery_usage_entity_id != entity_id
-        ):
-            await self.hass.services.async_call(
-                "switch",
-                "turn_off",
-                {"entity_id": self.switch_avoid_battery_usage_entity_id},
-            )
-        if self.switch_force_buying_entity_id and (
-            self.switch_force_buying_entity_id != entity_id
-        ):
-            await self.hass.services.async_call(
-                "switch",
-                "turn_off",
-                {"entity_id": self.switch_force_buying_entity_id},
-            )
-        if self.switch_force_selling_entity_id and (
-            self.switch_force_selling_entity_id != entity_id
-        ):
-            await self.hass.services.async_call(
-                "switch",
-                "turn_off",
-                {"entity_id": self.switch_force_selling_entity_id},
             )
 
     def validate_input_sensors(self) -> str:

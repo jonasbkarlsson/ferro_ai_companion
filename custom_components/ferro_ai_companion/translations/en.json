@@ -63,8 +63,8 @@
             "min_charging_current": { "name": "Minimum charging current" }
         },
         "select": {
-            "override_mode": {
-                "name": "Override mode",
+            "companion_mode": {
+                "name": "Compansion mode",
                 "state": {
                     "auto": "Auto",
                     "self": "Self consumption",

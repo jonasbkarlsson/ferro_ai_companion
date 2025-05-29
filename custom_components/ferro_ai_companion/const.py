@@ -45,7 +45,7 @@ ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH = "avoid_battery_usage"
 ENTITY_KEY_FORCE_BUYING_SWITCH = "force_buying"
 ENTITY_KEY_FORCE_SELLING_SWITCH = "force_selling"
 
-ENTITY_KEY_OVERRIDE_MODE_SELECT = "override_mode"
+ENTITY_KEY_COMPANION_MODE_SELECT = "companion_mode"
 
 # Configuration and options
 CONF_DEVICE_NAME = "device_name"
@@ -72,8 +72,8 @@ FERRO_AI_MODES = [
     MODE_SELL,
     MODE_UNKNOWN,
 ]
-# Override modes
-OVERRIDE_MODES = [
+# Companion modes
+COMPANION_MODES = [
     MODE_AUTO,
     MODE_SELF,
     MODE_PEAK,

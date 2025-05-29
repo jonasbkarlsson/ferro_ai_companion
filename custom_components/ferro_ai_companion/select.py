@@ -1,19 +1,17 @@
 """Select platform for EV Smart Charging."""
 
 import logging
-from typing import Union
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant, State
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
     DOMAIN,
-    ENTITY_KEY_OVERRIDE_MODE_SELECT,
+    ENTITY_KEY_COMPANION_MODE_SELECT,
     ICON_LIST,
     MODE_AUTO,
-    OVERRIDE_MODES,
+    COMPANION_MODES,
     SELECT,
 )
 from .coordinator import FerroAICompanionCoordinator
@@ -29,14 +27,14 @@ async def async_setup_entry(
     _LOGGER.debug("EVSmartCharging.select.py")
     coordinator = hass.data[DOMAIN][entry.entry_id]
     selects = []
-    selects.append(FerroAICompanionSelectOverrideMode(entry, coordinator))
+    selects.append(FerroAICompanionSelectCompanionMode(entry, coordinator))
     async_add_devices(selects)
 
 
 class FerroAICompanionSelect(FerroAICompanionEntity, SelectEntity, RestoreEntity):
     """EV Smart Charging switch class."""
 
-    _attr_current_option: Union[str, None] = None  # Using Union to support Python 3.9
+    _attr_current_option = None
 
     def __init__(self, entry, coordinator: FerroAICompanionCoordinator):
         _LOGGER.debug("FerroAICompanionSelect.__init__()")
@@ -61,13 +59,12 @@ class FerroAICompanionSelect(FerroAICompanionEntity, SelectEntity, RestoreEntity
         return None
 
 
-class FerroAICompanionSelectOverrideMode(FerroAICompanionSelect):
+class FerroAICompanionSelectCompanionMode(FerroAICompanionSelect):
     """EV Smart Charging start_quarter select class."""
 
-    _entity_key = ENTITY_KEY_OVERRIDE_MODE_SELECT
+    _entity_key = ENTITY_KEY_COMPANION_MODE_SELECT
     _attr_icon = ICON_LIST
-    _attr_entity_category = EntityCategory.CONFIG
-    _attr_options = OVERRIDE_MODES
+    _attr_options = COMPANION_MODES
 
     def __init__(self, entry, coordinator: FerroAICompanionCoordinator):
         _LOGGER.debug("FerroAICompanionSelectReadyQuarter.__init__()")
