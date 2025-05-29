@@ -22,7 +22,7 @@ It might take up to 24 hours until the integration has learned the peak shaving 
 ## Features
 - Shows the peak shaving threshold(s) that Ferro AI is using to reduce peak power.
 - Shows in which of the four modes that Ferro AI is operating in.
-- Can overide the Ferro AI operating mode.
+- Can override the Ferro AI operating mode.
 
 ## Installation
 
