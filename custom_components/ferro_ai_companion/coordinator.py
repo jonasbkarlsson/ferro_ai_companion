@@ -132,6 +132,15 @@ class FerroAICompanionCoordinator:
             self.solar_ev_charging = SolarEVCharging(
                 hass, config_entry, get_parameter(self.config_entry, CONF_MQTT_ENTITY)
             )
+            # self.listeners.append(
+            #     async_track_state_change_event(
+            #         self.hass,
+            #         [
+            #             self.solar_ev_charging.sensor_ferroamp_system_state_of_charge,
+            #         ],
+            #         self.handle_events,
+            #     )
+            # )
 
         # Update state once per quarter.
         # Randomize the minute and second to avoid all instances updating at the same time.
@@ -144,6 +153,15 @@ class FerroAICompanionCoordinator:
                 second=randint(0, 59),
             )
         )
+        # Generate triggers every 5 minutes.
+        # self.listeners.append(
+        #     async_track_time_change(
+        #         hass,
+        #         self.update_every_five_minutes,
+        #         minute=[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
+        #         second=0,
+        #     )
+        # )
         # Listen for changes to the device.
         self.listeners.append(
             hass.bus.async_listen(EVENT_DEVICE_REGISTRY_UPDATED, self.device_updated)
@@ -229,6 +247,15 @@ class FerroAICompanionCoordinator:
 
             except (ValueError, TypeError) as e:
                 _LOGGER.error("Failed to fetch remaining solar energy: %s", e)
+
+    @callback
+    async def update_every_five_minutes(
+        self, date_time: datetime = None
+    ):  # pylint: disable=unused-argument
+        """Called every five minutes"""
+        _LOGGER.debug("FerroAICompanionCoordinator.update_every_five_minutes()")
+        if self.solar_ev_charging:
+            await self.solar_ev_charging.solar_start_conditions()
 
     @callback
     async def update_quarterly(
@@ -481,6 +508,7 @@ class FerroAICompanionCoordinator:
                         self.assumed_house_consumption,
                         self.operation_settings.max_soc,
                     )
+                    await self.solar_ev_charging.solar_start_trigger()
 
                 except (ValueError, TypeError) as e:
                     _LOGGER.error("Failed to fetch remaining solar energy: %s", e)
@@ -516,6 +544,16 @@ class FerroAICompanionCoordinator:
 
         # Handle triggers
         # TODO: Add TRIGGERS
+
+        if self.solar_ev_charging:
+            if (
+                entity_id
+                == self.solar_ev_charging.sensor_ferroamp_system_state_of_charge
+            ):
+                await self.solar_ev_charging.solar_start_trigger()
+        if entity_id == ENTITY_KEY_EV_CONNECTED_SWITCH and new_state is True:
+            if self.solar_ev_charging:
+                await self.solar_ev_charging.solar_start_conditions()
 
     async def add_sensor(self, sensors: list[FerroAICompanionSensor]):
         """Set up sensor"""

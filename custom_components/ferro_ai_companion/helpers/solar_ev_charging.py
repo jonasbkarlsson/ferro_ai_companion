@@ -34,12 +34,15 @@ class SolarEVCharging:
     """Class to handle solar EV charging for Ferro AI Companion."""
 
     def __init__(
-        self, hass: HomeAssistant, config_entry: ConfigEntry, entity_id: str
+        self,
+        hass: HomeAssistant,
+        config_entry: ConfigEntry,
+        entity_id: str,
     ) -> None:
         """Initialize."""
         self._hass = hass
         self._config_entry = config_entry
-        self._sensor_ferroamp_system_state_of_charge = None
+        self.sensor_ferroamp_system_state_of_charge = None
         self._sensor_ferroamp_total_rated_capacity_of_all_batteries = None
         self._sensor_ferroamp_solar_power = None
         self._sensor_ferroamp_external_volatage = None
@@ -67,7 +70,7 @@ class SolarEVCharging:
                 for entry in registry_entries:
                     if entry[1].device_id == device_id:
                         if entry[1].original_name == "System State of Charge":
-                            self._sensor_ferroamp_system_state_of_charge = entry[
+                            self.sensor_ferroamp_system_state_of_charge = entry[
                                 1
                             ].entity_id
                         elif (
@@ -145,24 +148,58 @@ class SolarEVCharging:
         _LOGGER.debug("self.start_soc = %s", self.start_soc)
         _LOGGER.debug("self.stop_soc = %s", self.stop_soc)
 
-    def solar_start(self) -> None:
-        """Start solar EV charging."""
-        _LOGGER.debug("Solar EV charging started")
+    async def solar_start_trigger(self) -> None:
+        """Stop solar EV charging."""
+        if self.sensor_ferroamp_system_state_of_charge:
+            try:
+                ferroamp_sysetem_soc = float(
+                    self._hass.states.get(
+                        self.sensor_ferroamp_system_state_of_charge
+                    ).state
+                )
+                if ferroamp_sysetem_soc >= self.start_soc:
+                    await self.solar_start_conditions()
+            except (ValueError, TypeError, AttributeError) as e:
+                _LOGGER.debug(e)
 
-    # conditions:
-    #   - condition: state
-    #     entity_id: switch.ev_smart_charging_ev_connected
-    #     state: "on"
-    #   - condition: numeric_state
-    #     entity_id: sensor.volkswagen_id_id_4_gtx_state_of_charge
-    #     below: sensor.volkswagen_id_id_4_gtx_target_state_of_charge
-    #   - condition: template
-    #     value_template: >-
-    #       {{states('sensor.ferroamp_system_state_of_charge') >=
-    #       states('input_number.solar_charging_start_soc')}}
-    #   - condition: state
-    #     entity_id: input_boolean.solar_charging_ongoing
-    #     state: "off"
-    #   - condition: numeric_state
-    #     entity_id: sensor.ferroamp_solar_power
-    #     above: 3000
+    async def solar_start_conditions(self) -> None:
+        """Start solar EV charging."""
+        # Trigger 1: EV Connected changed to "on"
+        # Trigger 2: Every five minutes
+        # Trigger 3: Ferroamp System State of Charge >= Start SOC
+
+        _LOGGER.debug("solar_start_conditions called")
+
+        # conditions:
+        #   - condition: state
+        #     entity_id: switch.ev_smart_charging_ev_connected
+        #     state: "on"
+        #   - condition: numeric_state
+        #     entity_id: sensor.volkswagen_id_id_4_gtx_state_of_charge
+        #     below: sensor.volkswagen_id_id_4_gtx_target_state_of_charge
+        #   - condition: template
+        #     value_template: >-
+        #       {{states('sensor.ferroamp_system_state_of_charge') >=
+        #       states('input_number.solar_charging_start_soc')}}
+        #   - condition: state
+        #     entity_id: input_boolean.solar_charging_ongoing
+        #     state: "off"
+        #   - condition: numeric_state
+        #     entity_id: sensor.ferroamp_solar_power
+        #     above: 3000
+        if (
+            self.sensor_ferroamp_system_state_of_charge
+            and self._sensor_ferroamp_solar_power
+        ):
+            ferroamp_sysetem_soc = float(
+                self._hass.states.get(self.sensor_ferroamp_system_state_of_charge).state
+            )
+            solar_power = float(
+                self._hass.states.get(self._sensor_ferroamp_solar_power).state
+            )
+            if (
+                ferroamp_sysetem_soc >= self.start_soc
+                and solar_power > 3000  # Example threshold for solar power
+            ):
+                _LOGGER.debug("Starting solar EV charging")
+                # TODO: Here you would add the logic to start the charging process

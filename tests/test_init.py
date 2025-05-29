@@ -1,6 +1,5 @@
 """Test ferro_ai_companion setup process."""
 
-from homeassistant.const import MAJOR_VERSION, MINOR_VERSION
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import ConfigEntryNotReady
 import pytest
