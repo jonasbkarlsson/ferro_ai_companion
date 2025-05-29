@@ -35,7 +35,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     coordinator = FerroAICompanionCoordinator(hass, entry)
     validation_error = coordinator.validate_input_sensors()
-    validation_error = None
     if validation_error is not None:
         _LOGGER.debug("%s", validation_error)
         for unsub in coordinator.listeners:
@@ -130,9 +129,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry):
 
     if migration:
         # New argument to set version from HA 2024.4.
-        hass.config_entries.async_update_entry(
-            config_entry, data=new, version=version
-        )
+        hass.config_entries.async_update_entry(config_entry, data=new, version=version)
 
     _LOGGER.info("Migration to version %s successful", version)
 
