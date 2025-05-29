@@ -47,7 +47,7 @@ Parameter | Required | Description
 -- | -- | --
 Name | Yes | The name of the instance.
 Ferroamp Operation Settings entity | Yes | Any Any Ferroamp Operation Settings entity.
-Ferroamp Sensor entity | Yes | Any Ferroamp Sensor entity.
+Ferroamp MQTT Sensor entity | Yes | Any Ferroamp MQTT Sensor entity.
 
 With the exception of Name, the above configuration items can be changed after intial configuration in Settings -> Devices & Services -> Integrations -> Ferro AI Companion -> 1 device -> Configure. To change Name, the native way to rename Integrations or Devices in Home Assistant can be used.
 
