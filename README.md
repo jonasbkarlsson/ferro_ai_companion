@@ -8,7 +8,7 @@
 [![Project Maintenance][maintenance-shield]][user_profile]
 [![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
 
-![Icon](assets/icon.png)
+![Icon](assets/logo.png)
 
 The Ferro AI Companion integration works on top of Ferro AI from Ferroamp. It provides observation of what Ferro AO does and possibilities to override the Ferro AI function.
 
