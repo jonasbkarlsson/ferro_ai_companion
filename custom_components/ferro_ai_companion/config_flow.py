@@ -70,6 +70,7 @@ class FerroAICompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._errors[error[0]] = error[1]
 
             if not self._errors:
+                user_input[CONF_SOLAR_EV_CHARGING_ENABLED] = False  # TODO:
                 self.user_input = user_input
                 if user_input[CONF_SOLAR_EV_CHARGING_ENABLED]:
                     return await self.async_step_solar()
@@ -93,9 +94,10 @@ class FerroAICompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(
                 CONF_MQTT_ENTITY, default=user_input[CONF_MQTT_ENTITY]
             ): cv.string,
-            vol.Required(
-                CONF_SOLAR_EV_CHARGING_ENABLED, default=user_input[CONF_SOLAR_EV_CHARGING_ENABLED]
-            ): cv.boolean,
+            # vol.Required(
+            #     CONF_SOLAR_EV_CHARGING_ENABLED,
+            #     default=user_input[CONF_SOLAR_EV_CHARGING_ENABLED],
+            # ): cv.boolean,
         }
 
         return self.async_show_form(
@@ -113,9 +115,13 @@ class FerroAICompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             user_input = {}
             # Provide defaults for form
-            user_input[CONF_SOLAR_FORECAST_TODAY_REMAINING] = FindEntity.find_forecast_entity(self.hass)
+            user_input[CONF_SOLAR_FORECAST_TODAY_REMAINING] = (
+                FindEntity.find_forecast_entity(self.hass)
+            )
             user_input[CONF_EV_SOC_SENSOR] = FindEntity.find_vw_soc_sensor(self.hass)
-            user_input[CONF_EV_TARGET_SOC_SENSOR] = FindEntity.find_vw_target_soc_sensor(self.hass)
+            user_input[CONF_EV_TARGET_SOC_SENSOR] = (
+                FindEntity.find_vw_target_soc_sensor(self.hass)
+            )
             user_input[CONF_NUMBER_OF_PHASES] = 3  # [1, 3]
 
         else:
@@ -137,7 +143,8 @@ class FerroAICompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         user_schema = {
             vol.Required(
-                CONF_SOLAR_FORECAST_TODAY_REMAINING, default=user_input[CONF_SOLAR_FORECAST_TODAY_REMAINING]
+                CONF_SOLAR_FORECAST_TODAY_REMAINING,
+                default=user_input[CONF_SOLAR_FORECAST_TODAY_REMAINING],
             ): cv.string,
             vol.Required(
                 CONF_EV_SOC_SENSOR, default=user_input[CONF_EV_SOC_SENSOR]
@@ -156,6 +163,7 @@ class FerroAICompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=self._errors,
             last_step=True,
         )
+
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Options flow handler"""
@@ -180,6 +188,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 self._errors[error[0]] = error[1]
 
             if not self._errors:
+                user_input[CONF_SOLAR_EV_CHARGING_ENABLED] = False  # TODO:
                 self.user_input = user_input
                 if user_input[CONF_SOLAR_EV_CHARGING_ENABLED]:
                     return await self.async_step_solar()
@@ -197,10 +206,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_MQTT_ENTITY,
                 default=get_parameter(self.config_entry, CONF_MQTT_ENTITY),
             ): cv.string,
-            vol.Required(
-                CONF_SOLAR_EV_CHARGING_ENABLED,
-                default=get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED),
-            ): cv.boolean,
+            # vol.Required(
+            #     CONF_SOLAR_EV_CHARGING_ENABLED,
+            #     default=get_parameter(
+            #         self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED
+            #     ),
+            # ): cv.boolean,
         }
 
         return self.async_show_form(
@@ -231,7 +242,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         user_schema = {
             vol.Required(
                 CONF_SOLAR_FORECAST_TODAY_REMAINING,
-                default=get_parameter(self.config_entry, CONF_SOLAR_FORECAST_TODAY_REMAINING),
+                default=get_parameter(
+                    self.config_entry, CONF_SOLAR_FORECAST_TODAY_REMAINING
+                ),
             ): cv.string,
             vol.Required(
                 CONF_EV_SOC_SENSOR,
