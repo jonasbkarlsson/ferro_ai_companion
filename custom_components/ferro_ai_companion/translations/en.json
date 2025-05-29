@@ -109,7 +109,11 @@
             }
         },
         "switch": {
-            "ev_connected": { "name": "EV connected" }
+            "ev_connected": { "name": "EV connected" },
+            "avoid_import": { "name": "Avoid import" },
+            "avoid_battery_usage": { "name": "Avoid battery usage" },
+            "force_buying": { "name": "Force buying" },
+            "force_selling": { "name": "Force selling" }
         }
     }
 }

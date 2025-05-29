@@ -38,6 +38,10 @@ ENTITY_KEY_SOLAR_EV_CHARGING_SENSOR = "solar_ev_charging"
 ENTITY_KEY_CHARGING_CURRENT_SENSOR = "charging_current"
 
 ENTITY_KEY_EV_CONNECTED_SWITCH = "ev_connected"
+ENTITY_KEY_AVOID_IMPORT_SWITCH = "avoid_import"
+ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH = "avoid_battery_usage"
+ENTITY_KEY_FORCE_BUYING_SWITCH = "force_buying"
+ENTITY_KEY_FORCE_SELLING_SWITCH = "force_selling"
 
 # Configuration and options
 CONF_DEVICE_NAME = "device_name"

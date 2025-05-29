@@ -9,21 +9,11 @@ from homeassistant.config_entries import (
 )
 
 from homeassistant.core import (
+    EventStateChangedData,
     HomeAssistant,
-    State,
     callback,
     Event,
 )
-
-# try:
-#     from homeassistant.core import (  # pylint: disable=no-name-in-module, unused-import
-#         EventStateChangedData,
-#     )
-# except ImportError:
-
-#     class EventStateChangedData:
-#         """Dummy class for HA 2024.5.4 and older."""
-
 
 from homeassistant.helpers import storage
 from homeassistant.helpers.device_registry import EVENT_DEVICE_REGISTRY_UPDATED
@@ -51,6 +41,11 @@ from .const import (
     CONF_SETTINGS_ENTITY,
     CONF_SOLAR_EV_CHARGING_ENABLED,
     CONF_SOLAR_FORECAST_TODAY_REMAINING,
+    ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH,
+    ENTITY_KEY_AVOID_IMPORT_SWITCH,
+    ENTITY_KEY_EV_CONNECTED_SWITCH,
+    ENTITY_KEY_FORCE_BUYING_SWITCH,
+    ENTITY_KEY_FORCE_SELLING_SWITCH,
     MODE_BUY,
     MODE_PEAK_SHAVING,
     MODE_SELF,
@@ -99,7 +94,10 @@ class FerroAICompanionCoordinator:
         self.sensor_solar_ev_charging = None
 
         self.switch_ev_connected = None
-        self.switch_ev_connected_previous = None
+        self.switch_avoid_import = None
+        self.switch_avoid_battery_usage = None
+        self.switch_force_buying = None
+        self.switch_force_selling = None
 
         self.solar_forecast_today_remaining_entity_id = None
         self.ev_soc_entity_id = None
@@ -194,10 +192,10 @@ class FerroAICompanionCoordinator:
             data = data.get(self.config_entry.entry_id)
             if data:
                 self.primary_peak_shaving_target_w = data.get(
-                    "primary_peak_shaving_target_w", 0
+                    "primary_peak_shaving_target_w", 0.0
                 )  # Default to 0 if not set
                 self.secondary_peak_shaving_target_w = data.get(
-                    "secondary_peak_shaving_target_w", 0
+                    "secondary_peak_shaving_target_w", 0.0
                 )  # Default to 0 if not set
                 self.sensor_peak_shaving_target.set(self.primary_peak_shaving_target_w)
                 self.sensor_secondary_peak_shaving_target.set(
@@ -205,6 +203,7 @@ class FerroAICompanionCoordinator:
                 )
 
         await self.update_quarterly()
+
         if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
             try:
                 remaining_solar_energy_wh = (
@@ -230,65 +229,31 @@ class FerroAICompanionCoordinator:
     ):  # pylint: disable=unused-argument
         """Called every quarter"""
         _LOGGER.debug("FerroAICompanionCoordinator.update_quarterly()")
+
+        # Fetch data
         await self.operation_settings.fetch_all_data()
         if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
             await self.solar_ev_charging.fetch_all_data()
 
         _LOGGER.debug(
-            "self.operation_settings.discharge_threshold = %s",
-            self.operation_settings.discharge_threshold_w,
+            "self.operation_settings.original_discharge_threshold = %s",
+            self.operation_settings.original_discharge_threshold_w,
         )
         _LOGGER.debug(
-            "self.operation_settings.charge_threshold = %s",
-            self.operation_settings.charge_threshold_w,
+            "self.operation_settings.original_charge_threshold = %s",
+            self.operation_settings.original_charge_threshold_w,
         )
 
-        if (
-            self.operation_settings.discharge_threshold_w > 0
-            and self.operation_settings.charge_threshold_w == 0
-        ):
-            self.sensor_mode.set(MODE_PEAK_SHAVING)
-            _LOGGER.debug("Mode = %s", MODE_PEAK_SHAVING)
-        elif (
-            self.operation_settings.charge_threshold_w > 0
-            and self.operation_settings.discharge_threshold_w > 0
-        ):
-            self.sensor_mode.set(MODE_BUY)
-            _LOGGER.debug("Mode = %s", MODE_BUY)
-        elif (
-            self.operation_settings.charge_threshold_w < 0
-            and self.operation_settings.discharge_threshold_w < 0
-        ):
-            self.sensor_mode.set(MODE_SELL)
-            _LOGGER.debug("Mode = %s", MODE_SELL)
-        else:
-            self.sensor_mode.set(MODE_SELF)
-            _LOGGER.debug("Mode = %s", MODE_SELF)
+        # Update the modes
+        mode = await self.operation_settings.get_mode()
+        self.sensor_mode.set(mode)
+        _LOGGER.debug("Mode = %s", mode)
 
-        if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
-            if (
-                self.operation_settings.discharge_threshold_w > 0
-                and self.operation_settings.charge_threshold_w == 0
-            ):
-                self.sensor_original_mode.set(MODE_PEAK_SHAVING)
-            elif (
-                self.operation_settings.charge_threshold_w > 0
-                and self.operation_settings.discharge_threshold_w > 0
-            ):
-                self.sensor_original_mode.set(MODE_BUY)
-            elif (
-                self.operation_settings.charge_threshold_w < 0
-                and self.operation_settings.discharge_threshold_w < 0
-            ):
-                self.sensor_original_mode.set(MODE_SELL)
-            else:
-                if (
-                    self.sensor_solar_ev_charging.state == STATE_ON
-                ):  # TODO: And discharge threshold memory >= 0
-                    self.sensor_original_mode.set(MODE_PEAK_SHAVING)
-                else:
-                    self.sensor_original_mode.set(MODE_SELF)
+        mode = await self.operation_settings.get_original_mode()
+        self.sensor_original_mode.set(mode)
+        _LOGGER.debug("Original mode = %s", mode)
 
+        # Update the peak shaving targets
         _LOGGER.debug(
             "self.primary_peak_shaving_target = %s", self.primary_peak_shaving_target_w
         )
@@ -298,34 +263,34 @@ class FerroAICompanionCoordinator:
         )
 
         if self.primary_peak_shaving_target_w == 0:
-            if self.operation_settings.discharge_threshold_w > 0:
+            if self.operation_settings.original_discharge_threshold_w > 0:
                 self.primary_peak_shaving_target_w = (
-                    self.operation_settings.discharge_threshold_w
+                    self.operation_settings.original_discharge_threshold_w
                 )
-        elif self.operation_settings.discharge_threshold_w > 0:
+        elif self.operation_settings.original_discharge_threshold_w > 0:
             if (
                 0.6
                 < (
-                    self.operation_settings.discharge_threshold_w
+                    self.operation_settings.original_discharge_threshold_w
                     / self.primary_peak_shaving_target_w
                 )
                 < 1.4
             ):
                 # If the new value is within 40% of the previous value, update the previous value.
                 self.primary_peak_shaving_target_w = (
-                    self.operation_settings.discharge_threshold_w
+                    self.operation_settings.original_discharge_threshold_w
                 )
             elif (
-                self.operation_settings.discharge_threshold_w
+                self.operation_settings.original_discharge_threshold_w
                 / self.primary_peak_shaving_target_w
             ) >= 1.4:
                 # If the new value is more than 40% higher than the previous primary value,
                 # update the secondary value.
                 self.secondary_peak_shaving_target_w = (
-                    self.operation_settings.discharge_threshold_w
+                    self.operation_settings.original_discharge_threshold_w
                 )
             elif (
-                self.operation_settings.discharge_threshold_w
+                self.operation_settings.original_discharge_threshold_w
                 / self.primary_peak_shaving_target_w
             ) <= 0.6:
                 # If the new value is more than 40% lower than the previous primaryvalue,
@@ -334,9 +299,10 @@ class FerroAICompanionCoordinator:
                     self.primary_peak_shaving_target_w
                 )
                 self.primary_peak_shaving_target_w = (
-                    self.operation_settings.discharge_threshold_w
+                    self.operation_settings.original_discharge_threshold_w
                 )
 
+        # Update the peak shaving target sensors if they are not equal to the current values.
         if (
             self.sensor_peak_shaving_target.state != self.primary_peak_shaving_target_w
             or self.sensor_secondary_peak_shaving_target.state
@@ -372,10 +338,10 @@ class FerroAICompanionCoordinator:
                 }
                 await self.data_store.async_save(data)
 
-        self.sensor_peak_shaving_target.set(self.primary_peak_shaving_target_w)
-        self.sensor_secondary_peak_shaving_target.set(
-            self.secondary_peak_shaving_target_w
-        )
+            self.sensor_peak_shaving_target.set(self.primary_peak_shaving_target_w)
+            self.sensor_secondary_peak_shaving_target.set(
+                self.secondary_peak_shaving_target_w
+            )
 
         _LOGGER.debug(
             "self.primary_peak_shaving_target = %s", self.primary_peak_shaving_target_w
@@ -385,62 +351,73 @@ class FerroAICompanionCoordinator:
             self.secondary_peak_shaving_target_w,
         )
 
-    @callback
-    async def update_state(
-        self, date_time: datetime = None
-    ):  # pylint: disable=unused-argument
-        """Called every quarter"""
-        _LOGGER.debug("FerroAICompanionCoordinator.update_state()")
-        # if self._charging_schedule is not None:
+    async def switch_ev_connected_update(self, state: bool):
+        """Handle the EV Connected switch"""
+        self.switch_ev_connected = state
+        _LOGGER.debug("switch_ev_connected_update = %s", state)
+        await self.generate_event(ENTITY_KEY_EV_CONNECTED_SWITCH, not state, state)
 
-    #             await self.hass.services.async_call(
-    #                 domain=self.charger_switch.domain,
-    #                 service=SERVICE_TURN_ON,
-    #                 target={"entity_id": self.charger_switch.entity_id},
-    #             )
+    async def switch_avoid_import_update(self, state: bool):
+        """Handle the Avoid Import switch"""
+        self.switch_avoid_import = state
+        _LOGGER.debug("switch_avoid_import_update = %s", state)
+        await self.generate_event(ENTITY_KEY_AVOID_IMPORT_SWITCH, not state, state)
 
-    async def update_configuration(self):
-        """Called when the configuration has been updated"""
-        await self.update_sensors(configuration_updated=True)
+    async def switch_avoid_battery_usage_update(self, state: bool):
+        """Handle the Avoid Battery Usage switch"""
+        self.switch_avoid_battery_usage = state
+        _LOGGER.debug("switch_avoid_battery_usage_update = %s", state)
+        await self.generate_event(
+            ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH, not state, state
+        )
 
-    @callback
-    async def update_sensors_new(
+    async def switch_force_buying_update(self, state: bool):
+        """Handle the Force Buying switch"""
+        self.switch_force_buying = state
+        _LOGGER.debug("switch_force_buying_update = %s", state)
+        await self.generate_event(ENTITY_KEY_FORCE_BUYING_SWITCH, not state, state)
+
+    async def switch_force_selling_update(self, state: bool):
+        """Handle the Force Selling switch"""
+        self.switch_force_selling = state
+        _LOGGER.debug("switch_force_selling_update = %s", state)
+        await self.generate_event(ENTITY_KEY_FORCE_SELLING_SWITCH, not state, state)
+
+    async def generate_event(
         self,
-        event: Event,  # Event[EventStateChangedData]
-        configuration_updated: bool = False,
-    ):  # pylint: disable=unused-argument
-        """Price or EV sensors have been updated.
+        entity_id: str = None,
+        old_state=None,
+        new_state=None,
+    ):
+        """Handle entity state changes."""
+
+        state_changed_data: EventStateChangedData = {
+            "entity_id": entity_id,
+            "old_state": old_state,
+            "new_state": new_state,
+        }
+        event = Event[EventStateChangedData](event_type=None, data=state_changed_data)
+        await self.handle_events(event)
+
+    @callback
+    async def handle_events(self, event: Event[EventStateChangedData]):
+        """Handle state change events.
         EventStateChangedData is supported from Home Assistant 2024.5.5"""
+
+        _LOGGER.debug("FerroAICompanionCoordinator.handle_state_change()")
 
         # Allowed from HA 2024.4
         entity_id = event.data["entity_id"]
         old_state = event.data["old_state"]
         new_state = event.data["new_state"]
 
-        await self.update_sensors(
-            entity_id=entity_id,
-            old_state=old_state,
-            new_state=new_state,
-            configuration_updated=configuration_updated,
-        )
-
-    async def update_sensors(
-        self,
-        entity_id: str = None,
-        old_state: State = None,
-        new_state: State = None,
-        configuration_updated: bool = False,
-    ):  # pylint: disable=unused-argument
-        """Price or EV sensors have been updated."""
-
-        _LOGGER.debug("FerroAICompanionCoordinator.update_sensors()")
         _LOGGER.debug("entity_id = %s", entity_id)
-        # _LOGGER.debug("old_state = %s", old_state)
+        _LOGGER.debug("old_state = %s", old_state)
         _LOGGER.debug("new_state = %s", new_state)
 
         if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
 
-            if self.ev_target_soc_entity_id and (entity_id == self.ev_soc_entity_id):
+            if self.ev_soc_entity_id and (entity_id == self.ev_soc_entity_id):
                 ev_soc_state = self.hass.states.get(self.ev_soc_entity_id)
                 if Validator.is_soc_state(ev_soc_state):
                     self.ev_soc_valid = True
@@ -451,7 +428,7 @@ class FerroAICompanionCoordinator:
                         _LOGGER.error("SOC sensor not valid: %s", ev_soc_state)
                     self.ev_soc_valid = False
 
-            if len(self.ev_target_soc_entity_id) > 0 and (
+            if self.ev_target_soc_entity_id and (
                 entity_id == self.ev_target_soc_entity_id
             ):
                 ev_target_soc_state = self.hass.states.get(self.ev_target_soc_entity_id)
@@ -466,7 +443,7 @@ class FerroAICompanionCoordinator:
                         )
                     self.ev_target_soc_valid = False
 
-            if len(self.solar_forecast_today_remaining_entity_id) > 0 and (
+            if self.solar_forecast_today_remaining_entity_id and (
                 entity_id == self.solar_forecast_today_remaining_entity_id
             ):
                 try:
@@ -487,7 +464,37 @@ class FerroAICompanionCoordinator:
                 except (ValueError, TypeError) as e:
                     _LOGGER.error("Failed to fetch remaining solar energy: %s", e)
 
-        # await self.update_state()  # Update the charging status
+        # Handle override switches
+        if entity_id in [
+            ENTITY_KEY_AVOID_IMPORT_SWITCH,
+            ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH,
+            ENTITY_KEY_FORCE_BUYING_SWITCH,
+            ENTITY_KEY_FORCE_SELLING_SWITCH,
+        ]:
+            if new_state is True:
+                await self.operation_settings.override(
+                    entity_id, self.primary_peak_shaving_target_w
+                )
+            else:
+                if (
+                    self.switch_avoid_battery_usage is False
+                    and self.switch_avoid_import is False
+                    and self.switch_force_buying is False
+                    and self.switch_force_selling is False
+                ):
+                    # If all override switches are off, reset the operation settings
+                    await self.operation_settings.stop_override()
+            # Update the modes
+            mode = await self.operation_settings.get_mode()
+            self.sensor_mode.set(mode)
+            _LOGGER.debug("Mode = %s", mode)
+
+            mode = await self.operation_settings.get_original_mode()
+            self.sensor_original_mode.set(mode)
+            _LOGGER.debug("Original mode = %s", mode)
+
+        # Handle triggers
+        # TODO: Add TRIGGERS
 
     async def add_sensor(self, sensors: list[FerroAICompanionSensor]):
         """Set up sensor"""
@@ -505,16 +512,41 @@ class FerroAICompanionCoordinator:
             if isinstance(sensor, FerroAICompanionSensorSolarEVCharging):
                 self.sensor_solar_ev_charging = sensor
 
-        self.ev_soc_entity_id = get_parameter(self.config_entry, CONF_EV_SOC_SENSOR)
-        self.ev_target_soc_entity_id = get_parameter(
-            self.config_entry, CONF_EV_TARGET_SOC_SENSOR
-        )
-        self.solar_forecast_today_remaining_entity_id = get_parameter(
-            self.config_entry, CONF_SOLAR_FORECAST_TODAY_REMAINING
-        )
-
-        # Assume Home Assistant 2024.6 or newer
         if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
+
+            # Initialize EV SOC sensor
+            self.ev_soc_entity_id = get_parameter(self.config_entry, CONF_EV_SOC_SENSOR)
+            ev_soc_state = self.hass.states.get(self.ev_soc_entity_id)
+            if Validator.is_soc_state(ev_soc_state):
+                await self.generate_event(
+                    self.ev_soc_entity_id, None, ev_soc_state.state
+                )
+
+            # Initialize EV Target SOC sensor
+            self.ev_target_soc_entity_id = get_parameter(
+                self.config_entry, CONF_EV_TARGET_SOC_SENSOR
+            )
+            ev_target_soc_state = self.hass.states.get(self.ev_target_soc_entity_id)
+            if Validator.is_soc_state(ev_target_soc_state):
+                await self.generate_event(
+                    self.ev_target_soc_entity_id, None, ev_target_soc_state.state
+                )
+
+            # Initialize Solar Forecast Today Remaining sensor
+            self.solar_forecast_today_remaining_entity_id = get_parameter(
+                self.config_entry, CONF_SOLAR_FORECAST_TODAY_REMAINING
+            )
+            solar_forecast_today_remaining_state = self.hass.states.get(
+                self.solar_forecast_today_remaining_entity_id
+            )
+            if Validator.is_float(solar_forecast_today_remaining_state):
+                await self.generate_event(
+                    self.solar_forecast_today_remaining_entity_id,
+                    None,
+                    solar_forecast_today_remaining_state.state,
+                )
+
+            # Assume Home Assistant 2024.6 or newer
             self.listeners.append(
                 async_track_state_change_event(
                     self.hass,
@@ -523,30 +555,9 @@ class FerroAICompanionCoordinator:
                         self.ev_target_soc_entity_id,
                         self.ev_soc_entity_id,
                     ],
-                    self.update_sensors_new,
+                    self.handle_events,
                 )
             )
-
-        await self.update_sensors()  # TODO: Should this be removed?
-
-    async def switch_ev_connected_update(self, state: bool):
-        """Handle the EV Connected switch"""
-        self.switch_ev_connected_previous = self.switch_ev_connected
-        self.switch_ev_connected = state
-        _LOGGER.debug("switch_ev_connected_update = %s", state)
-        await self.update_configuration()
-
-    def get_entity_id_from_unique_id(self, unique_id: str) -> str:
-        """Get the Entity ID for the entity with the unique_id"""
-        entity_registry: EntityRegistry = async_entity_registry_get(self.hass)
-        all_entities = async_entries_for_config_entry(
-            entity_registry, self.config_entry.entry_id
-        )
-        entity = [entity for entity in all_entities if entity.unique_id == unique_id]
-        if len(entity) == 1:
-            return entity[0].entity_id
-
-        return None
 
     def validate_input_sensors(self) -> str:
         """Check that all input sensors returns values."""

@@ -1,4 +1,7 @@
-default_config:
+#default_config:
+sun:
+config:
+history:
 
 automation: !include automations.yaml
 
@@ -8,115 +11,4 @@ logger:
   logs:
     custom_components.ferro_ai_companion: debug
 
-# If you need to debug uncomment the line below (doc: https://www.home-assistant.io/integrations/debugpy/)
-# debugpy:
-
-template:
-  - trigger:
-      - trigger: homeassistant
-        event: start
-      - platform: time_pattern
-        # Update once per hour
-        minutes: 0
-    sensor:
-      - name: "My price sensor"
-        state: "No value shown"
-        unique_id: my_price_sensor
-        attributes:
-          prices: >
-            {# 0=Monday, 1=Tuesday, 2=Wednesday...       #}
-            {% set low_tariff_weekdays = [0, 1, 2, 3, 4, 5, 6] %}
-
-            {# Exampel: range(7,23) give low price between 07:00 and 23:00. #}
-            {% set low_tariff_hours    = range(7,23)                        %}
-
-            {% set low_tariff_price    = 0.25            %}
-            {% set high_tariff_price   = 0.55            %}
-
-            {% set time_now = now() %}
-            {% set day_of_week = time_now.weekday() %}
-            {% set prices = namespace(data=[]) %}
-            {% for hour in range(0, 24) %}
-              {% set price = low_tariff_price if day_of_week in low_tariff_weekdays and hour in low_tariff_hours else high_tariff_price %}
-              {% set price_time = time_now.replace(hour=hour, minute=0, second=0, microsecond=0).isoformat() %}
-              {% set prices.data = prices.data + [{'time': price_time, 'price': price}] %}
-            {% endfor %}
-            {% set time_tomorrow = now() + timedelta(days=1) %}
-            {% set day_of_week = time_tomorrow.weekday() %}
-            {% for hour in range(0, 24) %}
-              {% set price = low_tariff_price if day_of_week in low_tariff_weekdays and hour in low_tariff_hours else high_tariff_price %}
-              {% set price_time = time_tomorrow.replace(hour=hour, minute=0, second=0, microsecond=0).isoformat() %}
-              {% set prices.data = prices.data + [{'time': price_time, 'price': price}] %}
-            {% endfor %}
-            {{ prices.data}}
-  - sensor:
-    - name: "Customized Energi Data Service"
-      unique_id: energi_data_service_template_price_sensor
-      unit_of_measurement: DKK/kWh
-      availability: "{{ 'sensor.energi_data_service' | has_value }}"
-      state: 1.234
-      attributes:
-        prices_today: > #"{{ state_attr('sensor.energi_data_service', 'raw_today') }}"
-                {%- set forecast_data = state_attr('sensor.energi_data_service', 'raw_today') %}
-                {%- set time_key = 'hour' %}
-                {%- set price_key = 'price' %}
-                {%- set ns = namespace(data=[]) %}
-                {%- for i in forecast_data | default([], true) if as_local(as_datetime(i[time_key])).date() == now().date() %}
-                  {%- set ns.data = ns.data + [dict(time = as_local(as_datetime(i[time_key])).isoformat(), price = i[price_key])] %}
-                {%- endfor %}
-                {{ ns.data }}
-        prices_tomorrow: >
-            {% set tomorrow = state_attr('sensor.energi_data_service', 'tomorrow_valid') %}
-            {% set tomorrow_copy = state_attr('sensor.energi_data_service', 'raw_tomorrow') %}
-            {% if tomorrow == false %}
-                {%- set forecast_data = state_attr('sensor.energi_data_service', 'forecast') %}
-                {%- set time_key = 'hour' %}
-                {%- set price_key = 'price' %}
-                {%- set ns = namespace(data=[]) %}
-                {%- for i in forecast_data | default([], true) if as_local(as_datetime(i[time_key])).date() == (now()+timedelta(days=1)).date() %}
-                    {%- set ns.data = ns.data + [dict(time = as_local(as_datetime(i[time_key])).isoformat(), price = i[price_key])] %}
-                {%- endfor %}
-                {{ ns.data }}
-            {% else %}
-                {%- set forecast_data = state_attr('sensor.energi_data_service', 'raw_tomorrow') %}
-                {%- set time_key = 'hour' %}
-                {%- set price_key = 'price' %}
-                {%- set ns = namespace(data=[]) %}
-                {%- for i in forecast_data | default([], true) if as_local(as_datetime(i[time_key])).date() == (now()+timedelta(days=1)).date() %}
-                    {%- set ns.data = ns.data + [dict(time = as_local(as_datetime(i[time_key])).isoformat(), price = i[price_key])] %}
-                {%- endfor %}
-                {{ ns.data }}
-            {% endif %}
-
-# Example configuration.yaml entry
-input_boolean:
-  notify_home:
-    name: Notify when someone arrives home
-    icon: mdi:car
-
-# Example configuration.yaml entry
-command_line:
-  - switch:
-      name: Control charging
-      unique_id: command_line_control_charging
-      command_on: echo "================= ON ================="
-      command_off: echo "================= OFF ================="
-  - switch:
-      name: Control charging 2
-      command_on: echo "================= ON ================="
-      command_off: echo "================= OFF ================="
-
-# Example configuration.yaml entry
-switch:
-  - platform: template
-    switches:
-      skylight:
-        turn_on:
-          action: input_boolean.turn_on
-          target:
-            entity_id: input_boolean.notify_home
-        turn_off:
-          action: input_boolean.turn_off
-          target:
-            entity_id: input_boolean.notify_home
 
