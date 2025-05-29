@@ -283,10 +283,9 @@ class FerroAICompanionCoordinator:
         self.sensor_mode.set(mode)
         _LOGGER.debug("Mode = %s", mode)
 
-        if self.sensor_original_mode:
-            mode = await self.operation_settings.get_original_mode()
-            self.sensor_original_mode.set(mode)
-            _LOGGER.debug("Original mode = %s", mode)
+        mode = await self.operation_settings.get_original_mode()
+        self.sensor_original_mode.set(mode)
+        _LOGGER.debug("Original mode = %s", mode)
 
         # Update the peak shaving targets
         _LOGGER.debug(
@@ -539,10 +538,9 @@ class FerroAICompanionCoordinator:
             self.sensor_mode.set(mode)
             _LOGGER.debug("Mode = %s", mode)
 
-            if self.sensor_original_mode:
-                mode = await self.operation_settings.get_original_mode()
-                self.sensor_original_mode.set(mode)
-                _LOGGER.debug("Original mode = %s", mode)
+            mode = await self.operation_settings.get_original_mode()
+            self.sensor_original_mode.set(mode)
+            _LOGGER.debug("Original mode = %s", mode)
 
         # Handle triggers
         # TODO: Add TRIGGERS

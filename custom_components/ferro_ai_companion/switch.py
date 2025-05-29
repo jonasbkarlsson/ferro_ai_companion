@@ -37,10 +37,10 @@ async def async_setup_entry(
     switches = []
     if get_parameter(entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
         switches.append(FerroAICompanionSwitchEVConnected(entry, coordinator))
-        switches.append(FerroAICompanionSwitchAvoidImport(entry, coordinator))
-        switches.append(FerroAICompanionSwitchAvoidBatteryUsage(entry, coordinator))
-        switches.append(FerroAICompanionSwitchForceBuying(entry, coordinator))
-        switches.append(FerroAICompanionSwitchForceSelling(entry, coordinator))
+    switches.append(FerroAICompanionSwitchAvoidImport(entry, coordinator))
+    switches.append(FerroAICompanionSwitchAvoidBatteryUsage(entry, coordinator))
+    switches.append(FerroAICompanionSwitchForceBuying(entry, coordinator))
+    switches.append(FerroAICompanionSwitchForceSelling(entry, coordinator))
     async_add_devices(switches)
 
 
