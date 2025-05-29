@@ -18,11 +18,7 @@ from .const import (
     ENTITY_KEY_PEAK_SHAVING_TARGET_SENSOR,
     ENTITY_KEY_SECONDARY_PEAK_SHAVING_TARGET_SENSOR,
     ENTITY_KEY_SOLAR_EV_CHARGING_SENSOR,
-    MODE_BUY,
-    MODE_PEAK_SHAVING,
-    MODE_SELF,
-    MODE_SELL,
-    MODE_UNKNOWN,
+    FERRO_AI_MODES,
     SENSOR,
 )
 from .entity import FerroAICompanionEntity
@@ -67,7 +63,7 @@ class FerroAICompanionSensorMode(FerroAICompanionSensor):
 
     _entity_key = ENTITY_KEY_MODE_SENSOR
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options = [MODE_SELF, MODE_PEAK_SHAVING, MODE_BUY, MODE_SELL, MODE_UNKNOWN]
+    _attr_options = FERRO_AI_MODES
 
     def __init__(self, entry):
         _LOGGER.debug("FerroAICompanionSensorMode.__init__()")

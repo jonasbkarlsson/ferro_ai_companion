@@ -1,7 +1,6 @@
 """Number platform for Ferro AI Companion."""
 
 import logging
-from typing import Union
 
 from homeassistant.components.number import (
     RestoreNumber,
@@ -46,8 +45,7 @@ async def async_setup_entry(
 class FerroAICompanionNumber(FerroAICompanionEntity, RestoreNumber):
     """Ferro AI Companion number class."""
 
-    # To support HA 2022.7
-    _attr_native_value: Union[float, None] = None  # Using Union to support Python 3.9
+    _attr_native_value = None
 
     def __init__(self, entry, coordinator: FerroAICompanionCoordinator):
         _LOGGER.debug("FerroAICompanionNumber.__init__()")

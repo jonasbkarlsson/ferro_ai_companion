@@ -14,12 +14,14 @@ ICON = "mdi:flash"
 ICON_BATTERY_50 = "mdi:battery-50"
 ICON_CONNECTION = "mdi:connection"
 ICON_CHARGING = "mdi:battery-charging-30"
+ICON_LIST = "mdi:format-list-bulleted"
 
 # Platforms
 SENSOR = Platform.SENSOR
 SWITCH = Platform.SWITCH
 NUMBER = Platform.NUMBER
-PLATFORMS = [SENSOR, SWITCH, NUMBER]
+SELECT = Platform.SELECT
+PLATFORMS = [SENSOR, SWITCH, NUMBER, SELECT]
 PLATFORM_FERROAMP_OPERATION_SETTINGS = "ferroamp_operation_settings"
 PLATFORM_FERROAMP = "ferroamp"
 PLATFORM_FORECAST_SOLAR = "forecast_solar"
@@ -30,8 +32,8 @@ ENTITY_KEY_CONF_ASSUMED_HOUSE_CONSUMPTION_NUMBER = "assumed_house_consumption"
 ENTITY_KEY_CONF_MAX_CHARGING_CURRENT_NUMBER = "max_charging_current"
 ENTITY_KEY_CONF_MIN_CHARGING_CURRENT_NUMBER = "min_charging_current"
 
-ENTITY_KEY_MODE_SENSOR = "mode"
-ENTITY_KEY_ORIGINAL_MODE_SENSOR = "original_mode"
+ENTITY_KEY_MODE_SENSOR = "energyhub_mode"
+ENTITY_KEY_ORIGINAL_MODE_SENSOR = "ferro_ai_mode"
 ENTITY_KEY_PEAK_SHAVING_TARGET_SENSOR = "peak_shaving_target"
 ENTITY_KEY_SECONDARY_PEAK_SHAVING_TARGET_SENSOR = "secondary_peak_shaving_target"
 ENTITY_KEY_SOLAR_EV_CHARGING_SENSOR = "solar_ev_charging"
@@ -43,6 +45,8 @@ ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH = "avoid_battery_usage"
 ENTITY_KEY_FORCE_BUYING_SWITCH = "force_buying"
 ENTITY_KEY_FORCE_SELLING_SWITCH = "force_selling"
 
+ENTITY_KEY_COMPANION_MODE_SELECT = "companion_mode"
+
 # Configuration and options
 CONF_DEVICE_NAME = "device_name"
 CONF_SETTINGS_ENTITY = "settings_entity"
@@ -53,11 +57,29 @@ CONF_EV_SOC_SENSOR = "ev_soc_sensor"
 CONF_EV_TARGET_SOC_SENSOR = "ev_target_soc_sensor"
 CONF_NUMBER_OF_PHASES = "number_of_phases"
 
+MODE_AUTO = "auto"
 MODE_SELF = "self"
-MODE_PEAK_SHAVING = "peak_shaving"
+MODE_PEAK = "peak"
 MODE_BUY = "buy"
 MODE_SELL = "sell"
 MODE_UNKNOWN = "unknown"
+
+# Ferro AI modes
+FERRO_AI_MODES = [
+    MODE_SELF,
+    MODE_PEAK,
+    MODE_BUY,
+    MODE_SELL,
+    MODE_UNKNOWN,
+]
+# Companion modes
+COMPANION_MODES = [
+    MODE_AUTO,
+    MODE_SELF,
+    MODE_PEAK,
+    MODE_BUY,
+    MODE_SELL,
+]
 
 # Defaults
 DEFAULT_NAME = DOMAIN
