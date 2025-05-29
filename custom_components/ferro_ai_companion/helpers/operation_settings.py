@@ -26,7 +26,7 @@ from ..const import (
     ENTITY_KEY_FORCE_BUYING_SWITCH,
     ENTITY_KEY_FORCE_SELLING_SWITCH,
     MODE_BUY,
-    MODE_PEAK_SHAVING,
+    MODE_PEAK,
     MODE_SELF,
     MODE_SELL,
 )
@@ -220,7 +220,7 @@ class OperationSettings:
     ) -> str:
         """Determine the mode."""
         if discharge_threshold_w > 0 and charge_threshold_w == 0:
-            return MODE_PEAK_SHAVING
+            return MODE_PEAK
         elif charge_threshold_w > 0 and discharge_threshold_w > 0:
             return MODE_BUY
         elif charge_threshold_w < 0 and discharge_threshold_w < 0:

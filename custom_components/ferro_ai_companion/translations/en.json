@@ -63,14 +63,14 @@
             "min_charging_current": { "name": "Minimum charging current" }
         },
         "select": {
-            "charge_start_time": { "name": "Charge start time" },
-            "charge_completion_time": { "name": "Charge completion time" },
-            "phase_switch_mode": {
-                "name": "Phase switch mode",
+            "override_mode": {
+                "name": "Override mode",
                 "state": {
-                    "one_phase": "Use one phase",
-                    "three_phases": "Use three phases",
-                    "dynamic": "Dynamically use one or three phases"
+                    "auto": "Auto",
+                    "self": "Self consumption",
+                    "peak": "Peak shaving",
+                    "buy": "Buy",
+                    "sell": "Sell"
                 }
             }
         },
@@ -79,7 +79,7 @@
                 "name": "Mode",
                 "state": {
                     "self": "Self consumption",
-                    "peak_shaving": "Peak shaving",
+                    "peak": "Peak shaving",
                     "buy": "Buy",
                     "sell": "Sell",
                     "unknown": "Unknown"
@@ -89,7 +89,7 @@
                 "name": "Original mode",
                 "state": {
                     "self": "Self consumption",
-                    "peak_shaving": "Peak shaving",
+                    "peak": "Peak shaving",
                     "buy": "Buy",
                     "sell": "Sell",
                     "unknown": "Unknown"
