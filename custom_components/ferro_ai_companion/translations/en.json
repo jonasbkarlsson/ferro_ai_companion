@@ -64,7 +64,7 @@
         },
         "select": {
             "companion_mode": {
-                "name": "Compansion mode",
+                "name": "Companion mode",
                 "state": {
                     "auto": "Auto",
                     "self": "Self consumption",

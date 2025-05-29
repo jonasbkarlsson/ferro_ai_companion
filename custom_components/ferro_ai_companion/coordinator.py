@@ -455,7 +455,7 @@ class FerroAICompanionCoordinator:
                 except (ValueError, TypeError) as e:
                     _LOGGER.error("Failed to fetch remaining solar energy: %s", e)
 
-        # Handle compansion mode select
+        # Handle companion mode select
         if entity_id == ENTITY_KEY_COMPANION_MODE_SELECT:
             if new_state == MODE_AUTO:
                 await self.operation_settings.stop_override()
