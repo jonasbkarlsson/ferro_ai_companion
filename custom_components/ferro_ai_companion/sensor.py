@@ -38,8 +38,8 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_devices):
     sensors.append(FerroAICompanionSensorMode(entry))
     sensors.append(FerroAICompanionSensorPeakShavingTarget(entry))
     sensors.append(FerroAICompanionSensorSecondaryPeakShavingTarget(entry))
+    sensors.append(FerroAICompanionSensorOriginalMode(entry))
     if get_parameter(entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
-        sensors.append(FerroAICompanionSensorOriginalMode(entry))
         sensors.append(FerroAICompanionSensorChargingCurrent(entry))
         sensors.append(FerroAICompanionSensorSolarEVCharging(entry))
     async_add_devices(sensors)
