@@ -19,6 +19,13 @@ from unittest.mock import patch
 import pytest
 from homeassistant.util import dt as dt_util
 
+from custom_components.ferro_ai_companion.helpers.operation_settings import (
+    OperationSettings,
+)
+from custom_components.ferro_ai_companion.helpers.solar_ev_charging import (
+    SolarEVCharging,
+)
+
 
 # pylint: disable=invalid-name
 pytest_plugins = "pytest_homeassistant_custom_component"
@@ -118,5 +125,46 @@ def bypass_is_during_intialization_fixture():
     with patch(
         "custom_components.ferro_ai_companion.coordinator.FerroAICompanionCoordinator.is_during_intialization",
         return_value=False,
+    ):
+        yield
+
+
+def mock_operation_settings_fetch_all_data(self: OperationSettings):
+    """Mock function for operation_settings.fetch_all_data."""
+    print("Mock function executed!")
+    self.max_soc = 100.0
+    self.discharge_threshold_w = 1000
+    self.charge_threshold_w = 500
+    self.original_discharge_threshold_w = 1000
+    self.original_charge_threshold_w = 500
+    return None
+
+
+# This fixture will mock the function fetch_all_data in result in OperationSettings.
+@pytest.fixture(name="mock_operation_settings_fetch_all_data", autouse=True)
+def mock_operation_settings_fetch_all_data_fixture():
+    """Mock operation_settings.fetch_all_data."""
+    with patch(
+        "custom_components.ferro_ai_companion.helpers.operation_settings.OperationSettings.fetch_all_data",
+        side_effect=mock_operation_settings_fetch_all_data,
+    ):
+        yield
+
+
+def mock_solar_ev_charging_fetch_all_data(self: SolarEVCharging):
+    """Mock function for solar_ev_charging.fetch_all_data."""
+    print("Mock function executed!")
+    self.external_voltage_v = 230.0
+    self.total_rated_soc_wh = 17700
+    return None
+
+
+# This fixture will mock the function fetch_all_data in result in SolarEVCharging.
+@pytest.fixture(name="mock_solar_ev_charging_fetch_all_data", autouse=True)
+def mock_solar_ev_charging_fetch_all_data_fixture():
+    """Mock operation_settings.fetch_all_data."""
+    with patch(
+        "custom_components.ferro_ai_companion.helpers.solar_ev_charging.SolarEVCharging.fetch_all_data",
+        side_effect=mock_solar_ev_charging_fetch_all_data,
     ):
         yield
