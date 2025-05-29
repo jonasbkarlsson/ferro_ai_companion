@@ -75,8 +75,8 @@
             }
         },
         "sensor": {
-            "mode": {
-                "name": "Mode",
+            "energyhub_mode": {
+                "name": "EnergyHub mode",
                 "state": {
                     "self": "Self consumption",
                     "peak": "Peak shaving",
@@ -85,8 +85,8 @@
                     "unknown": "Unknown"
                 }
             },
-            "original_mode": {
-                "name": "Original mode",
+            "ferro_ai_mode": {
+                "name": "Ferro AI mode",
                 "state": {
                     "self": "Self consumption",
                     "peak": "Peak shaving",
