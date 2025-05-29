@@ -10,7 +10,7 @@
 
 ![Icon](assets/icon.png)
 
-The Ferro AI Companion integration will ...
+The Ferro AI Companion integration works on top of Ferro AI from Ferroamp. It provides observation of what Ferro AO does and possibilities to override the Ferro AI function.
 
 ## Requirements
 - Home Assistant version 2024.12 or newer.
@@ -18,7 +18,9 @@ The Ferro AI Companion integration will ...
 - [Ferroamp MQTT Sensors](https://github.com/henricm/ha-ferroamp) integraton.
 
 ## Features
-- ...
+- Shows the peak shaving threshold(s) that Ferro AI is using to reduce peak power.
+- Shows in which of the four modes that Ferro AI is operating in.
+- Can overide the Ferro AI operating mode.
 
 ## Installation
 
@@ -44,23 +46,22 @@ The configuration is done in the Home Assistant user interface.
 Parameter | Required | Description
 -- | -- | --
 Name | Yes | The name of the instance.
+Ferroamp Operation Settings entity | Yes | Any Any Ferroamp Operation Settings entity.
+Ferroamp Sensor entity | Yes | Any Ferroamp Sensor entity.
 
 With the exception of Name, the above configuration items can be changed after intial configuration in Settings -> Devices & Services -> Integrations -> Ferro AI Companion -> 1 device -> Configure. To change Name, the native way to rename Integrations or Devices in Home Assistant can be used.
-
-Additional parameters that affects how the charging will be performed are available as configuration entities. These entities can be placed in the dashboard and can be controlled using automations.
-
-### Configuration entities
-
-Entity | Type | Descriptions, valid value ranges and service calls
--- | -- | --
 
 ## Entities
 
 Entity | Type | Description
 -- | -- | --
-
-
-## Lovelace UI
+`sensor.ferro_ai_companion_mode` | Sensor | The operation mode of Ferro AI. Can be `Peak shaving`, `Self consumption`, `Buying` or `Selling`.
+`sensor.ferro_ai_companion_peak_shaving_target` | Sensor | The peak shaving threshold used by Ferro AI to reduce peak power.
+`sensor.ferro_ai_companion_secondary_peak_shaving_target` | Sensor | If Ferro AI is configured to reduce peak power to two different level (one during day, one during night), this sensor will show the night threshold.
+`switch.ferro_ai_companion_force_peak_shaving` | Switch | Forces the Ferroamp system to use peak shaving.
+`switch.ferro_ai_companion_force_self_consumption` | Switch | Forces the Ferroamp system to use self consumption.
+`switch.ferro_ai_companion_force_buying` | Switch | Forces the Ferroamp system to try to buy as much as possible, up to the peak shaving target.
+`switch.ferro_ai_companion_force_selling` | Switch | Forces the Ferroamp system to try to sell as much as possible.
 
 [ferro_ai_companion]: https://github.com/jonasbkarlsson/ferro_ai_companion
 [releases-shield]: https://img.shields.io/github/v/release/jonasbkarlsson/ferro_ai_companion?style=for-the-badge
