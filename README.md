@@ -67,15 +67,25 @@ Entity | Type | Description
 
 ## Modes
 ### Peak shaving with charging
-Awaiting discharge. The battery is in standby, reserving energy for upcoming events.
+Ferro AI: Awaiting discharge. The battery is in standby, reserving energy for upcoming events.
+
+Peak shaving using the current peak shaving target. Excess solar power is used to charge the battery.
 ### Peak shaving with selling
-Waiting to charge. Waiting for lower electricity price before charging the battery with solar power.
+Ferro AI: Waiting to charge. Waiting for lower electricity price before charging the battery with solar power.
+
+Peak shaving using the current peak shaving target. Excess solar power is being sold.
 ### Self consumption
-Maximum self consumption. The battery charges when there is excess solar power and discharges to cover self consumption.
+Ferro AI: Maximum self consumption. The battery charges when there is excess solar power and discharges to cover self consumption.
+
+Maximum self consumption.
 ### Buy
-Charging from the grid. Preparing the battery for coming activities.
+Ferro AI: Charging from the grid. Preparing the battery for coming activities.
+
+Maximum import from grid, without exceeding the current peak shaving target.
 ### Sell
-Discharging. High electricity prices and solar power on the way. The battery discharges.
+Ferro AI: Discharging. High electricity prices and solar power on the way. The battery discharges.
+
+Maximum export to the grid.
 
 [ferro_ai_companion]: https://github.com/jonasbkarlsson/ferro_ai_companion
 [releases-shield]: https://img.shields.io/github/v/release/jonasbkarlsson/ferro_ai_companion?style=for-the-badge
