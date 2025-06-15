@@ -59,7 +59,8 @@ CONF_NUMBER_OF_PHASES = "number_of_phases"
 
 MODE_AUTO = "auto"
 MODE_SELF = "self"
-MODE_PEAK = "peak"
+MODE_PEAK_CHARGE = "peak_charge"
+MODE_PEAK_SELL = "peak_sell"
 MODE_BUY = "buy"
 MODE_SELL = "sell"
 MODE_UNKNOWN = "unknown"
@@ -67,7 +68,8 @@ MODE_UNKNOWN = "unknown"
 # Ferro AI modes
 FERRO_AI_MODES = [
     MODE_SELF,
-    MODE_PEAK,
+    MODE_PEAK_CHARGE,
+    MODE_PEAK_SELL,
     MODE_BUY,
     MODE_SELL,
     MODE_UNKNOWN,
@@ -76,7 +78,8 @@ FERRO_AI_MODES = [
 COMPANION_MODES = [
     MODE_AUTO,
     MODE_SELF,
-    MODE_PEAK,
+    MODE_PEAK_CHARGE,
+    MODE_PEAK_SELL,
     MODE_BUY,
     MODE_SELL,
 ]

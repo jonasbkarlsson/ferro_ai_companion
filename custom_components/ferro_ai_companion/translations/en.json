@@ -68,7 +68,8 @@
                 "state": {
                     "auto": "Auto",
                     "self": "Self consumption",
-                    "peak": "Peak shaving",
+                    "peak_charge": "Peak shaving with charging",
+                    "peak_sell": "Peak shaving with selling",
                     "buy": "Buy",
                     "sell": "Sell"
                 }
@@ -79,7 +80,8 @@
                 "name": "EnergyHub mode",
                 "state": {
                     "self": "Self consumption",
-                    "peak": "Peak shaving",
+                    "peak_charge": "Peak shaving with charging",
+                    "peak_sell": "Peak shaving with selling",
                     "buy": "Buy",
                     "sell": "Sell",
                     "unknown": "Unknown"
@@ -89,7 +91,8 @@
                 "name": "Ferro AI mode",
                 "state": {
                     "self": "Self consumption",
-                    "peak": "Peak shaving",
+                    "peak_charge": "Peak shaving with charging",
+                    "peak_sell": "Peak shaving with selling",
                     "buy": "Buy",
                     "sell": "Sell",
                     "unknown": "Unknown"
@@ -109,11 +112,7 @@
             }
         },
         "switch": {
-            "ev_connected": { "name": "EV connected" },
-            "avoid_import": { "name": "Avoid import" },
-            "avoid_battery_usage": { "name": "Avoid battery usage" },
-            "force_buying": { "name": "Force buying" },
-            "force_selling": { "name": "Force selling" }
+            "ev_connected": { "name": "EV connected" }
         }
     }
 }
