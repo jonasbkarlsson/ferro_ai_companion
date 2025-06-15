@@ -21,7 +21,7 @@ It might take up to 24 hours until the integration has learned the peak shaving 
 
 ## Features
 - Shows the peak shaving threshold(s) that Ferro AI is using to reduce peak power.
-- Shows in which of the four modes that Ferro AI is operating in.
+- Shows in which of the modes that Ferro AI is operating in.
 - Can override the Ferro AI operating mode.
 
 ## Installation
@@ -59,11 +59,23 @@ With the exception of Name, the above configuration items can be changed after i
 
 Entity | Type | Description
 -- | -- | --
-`sensor.ferro_ai_companion_energyhub_mode` | Sensor | Operation mode used by EnergyHub. Will be the same as the `Ferro AI mode` if `Companion mode` is set to `Auto`. Can be `Peak shaving`, `Self consumption`, `Buy` or `Sell`.
-`sensor.ferro_ai_companion_ferro_ai_mode` | Sensor | Operation mode choosen by Ferro AI. Can be `Peak shaving`, `Self consumption`, `Buy` or `Sell`.
+`sensor.ferro_ai_companion_energyhub_mode` | Sensor | Operation mode used by EnergyHub. Will be the same as the `Ferro AI mode` if `Companion mode` is set to `Auto`. Can be `Peak shaving with charging`, `Peak shaving with selling`, `Self consumption`, `Buy` or `Sell`.
+`sensor.ferro_ai_companion_ferro_ai_mode` | Sensor | Operation mode choosen by Ferro AI. Can be `Peak shaving with charging`, `Peak shaving with selling`, `Self consumption`, `Buy` or `Sell`.
 `sensor.ferro_ai_companion_peak_shaving_target` | Sensor | The peak shaving threshold used by Ferro AI to reduce peak power.
 `sensor.ferro_ai_companion_secondary_peak_shaving_target` | Sensor | If Ferro AI is configured to reduce peak power to two different levels (one during day, one during night), this sensor will show the night threshold.
-`switch.select.ferro_ai_companion_companion_mode` | Select | If set to `Auto`, Ferro AI will control EnergyHub mode. Override by setting to `Peak shaving`, `Self consumption`, `Buy` or `Sell`.
+`switch.select.ferro_ai_companion_companion_mode` | Select | If set to `Auto`, Ferro AI will control EnergyHub mode. Override by setting to `Peak shaving with charging`, `Peak shaving with selling`, `Self consumption`, `Buy` or `Sell`.
+
+## Modes
+### Peak shaving with charging
+Awaiting discharge. The battery is in standby, reserving energy for upcoming events.
+### Peak shaving with selling
+Waiting to charge. Waiting for lower electricity price before charging the battery with solar power.
+### Self consumption
+Maximum self consumption. The battery charges when there is excess solar power and discharges to cover self consumption.
+### Buy
+Charging from the grid. Preparing the battery for coming activities.
+### Sell
+Discharging. High electricity prices and solar power on the way. The battery discharges.
 
 [ferro_ai_companion]: https://github.com/jonasbkarlsson/ferro_ai_companion
 [releases-shield]: https://img.shields.io/github/v/release/jonasbkarlsson/ferro_ai_companion?style=for-the-badge
