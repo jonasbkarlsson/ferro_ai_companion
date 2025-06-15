@@ -21,12 +21,9 @@ from homeassistant.helpers.entity_registry import (
 
 
 from ..const import (
-    ENTITY_KEY_AVOID_BATTERY_USAGE_SWITCH,
-    ENTITY_KEY_AVOID_IMPORT_SWITCH,
-    ENTITY_KEY_FORCE_BUYING_SWITCH,
-    ENTITY_KEY_FORCE_SELLING_SWITCH,
     MODE_BUY,
-    MODE_PEAK,
+    MODE_PEAK_CHARGE,
+    MODE_PEAK_SELL,
     MODE_SELF,
     MODE_SELL,
 )
@@ -146,9 +143,12 @@ class OperationSettings:
         if mode == MODE_SELF:
             self.discharge_threshold_w = 0
             self.charge_threshold_w = 0
-        if mode == MODE_PEAK:
+        if mode == MODE_PEAK_CHARGE:
             self.discharge_threshold_w = peak_shaving_threshold
             self.charge_threshold_w = 0
+        if mode == MODE_PEAK_SELL:
+            self.discharge_threshold_w = peak_shaving_threshold
+            self.charge_threshold_w = -100000.0
         if mode == MODE_BUY:
             if peak_shaving_threshold == 0:
                 # If the peak shaving threshold has not been found yet, use 1000 W
@@ -219,11 +219,16 @@ class OperationSettings:
         self, discharge_threshold_w: float, charge_threshold_w: float
     ) -> str:
         """Determine the mode."""
+        # charge_threshold_w is always equal or larger than discharge_threshold_w
         if discharge_threshold_w > 0 and charge_threshold_w == 0:
-            return MODE_PEAK
+            return MODE_PEAK_CHARGE
         elif charge_threshold_w > 0 and discharge_threshold_w > 0:
             return MODE_BUY
+        elif charge_threshold_w > 0 and discharge_threshold_w < 0:
+            return MODE_PEAK_SELL
         elif charge_threshold_w < 0 and discharge_threshold_w < 0:
             return MODE_SELL
         else:
+            # charge_threshold_w == 0 and discharge_threshold_w == 0
+            # charge_threshold_w == 0 and discharge_threshold_w < 0
             return MODE_SELF
