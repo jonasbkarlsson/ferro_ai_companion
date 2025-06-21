@@ -19,6 +19,8 @@ from .const import (
     ENTITY_KEY_SECONDARY_PEAK_SHAVING_TARGET_SENSOR,
     ENTITY_KEY_SOLAR_EV_CHARGING_SENSOR,
     FERRO_AI_MODES,
+    ICON_MODE,
+    ICON_POWER_TARGET,
     SENSOR,
 )
 from .entity import FerroAICompanionEntity
@@ -62,6 +64,7 @@ class FerroAICompanionSensorMode(FerroAICompanionSensor):
     """Ferro AI Companion sensor class."""
 
     _entity_key = ENTITY_KEY_MODE_SENSOR
+    _attr_icon = ICON_MODE
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = FERRO_AI_MODES
 
@@ -75,6 +78,7 @@ class FerroAICompanionSensorOriginalMode(FerroAICompanionSensor):
     """Ferro AI Companion sensor class."""
 
     _entity_key = ENTITY_KEY_ORIGINAL_MODE_SENSOR
+    _attr_icon = ICON_MODE
     _attr_device_class = SensorDeviceClass.ENUM
 
     def __init__(self, entry):
@@ -87,6 +91,7 @@ class FerroAICompanionSensorPeakShavingTarget(FerroAICompanionSensor):
     """Ferro AI Companion sensor class."""
 
     _entity_key = ENTITY_KEY_PEAK_SHAVING_TARGET_SENSOR
+    _attr_icon = ICON_POWER_TARGET
     _attr_device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = "W"
 
@@ -100,6 +105,7 @@ class FerroAICompanionSensorSecondaryPeakShavingTarget(FerroAICompanionSensor):
     """Ferro AI Companion sensor class."""
 
     _entity_key = ENTITY_KEY_SECONDARY_PEAK_SHAVING_TARGET_SENSOR
+    _attr_icon = ICON_POWER_TARGET
     _attr_device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = "W"
 
