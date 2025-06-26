@@ -94,6 +94,7 @@ class FerroAICompanionSensorPeakShavingTarget(FerroAICompanionSensor):
     _attr_icon = ICON_POWER_TARGET
     _attr_device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = "W"
+    _attr_suggested_display_precision = 0
 
     def __init__(self, entry):
         _LOGGER.debug("FerroAICompanionSensorPeakShavingTarget.__init__()")
@@ -108,6 +109,7 @@ class FerroAICompanionSensorSecondaryPeakShavingTarget(FerroAICompanionSensor):
     _attr_icon = ICON_POWER_TARGET
     _attr_device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = "W"
+    _attr_suggested_display_precision = 0
 
     def __init__(self, entry):
         _LOGGER.debug("FerroAICompanionSensorSecondaryPeakShavingTarget.__init__()")
