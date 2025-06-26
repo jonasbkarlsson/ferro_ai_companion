@@ -111,15 +111,14 @@ class OperationSettings:
             if max_soc > 0.0:
                 self.max_soc = max_soc
             if self.override_active:
-                # If override is active, update the original values
-                update_needed = False
-                if discharge_threshold_w != self.discharge_threshold_w:
+                # If override is active and the threshold values have been changed,
+                # update the original values and restore the overridden thresholds.
+                if (
+                    discharge_threshold_w != self.discharge_threshold_w
+                    or charge_threshold_w != self.charge_threshold_w
+                ):
                     self.original_discharge_threshold_w = discharge_threshold_w
-                    update_needed = True
-                if charge_threshold_w != self.charge_threshold_w:
                     self.original_charge_threshold_w = charge_threshold_w
-                    update_needed = True
-                if update_needed:
                     # Restore the overridden thresholds
                     await self.update_thresholds()
             else:
