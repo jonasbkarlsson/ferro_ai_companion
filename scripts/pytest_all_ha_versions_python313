@@ -52,3 +52,6 @@ run_next_test "auto"
 
 pip3 install -qq homeassistant==2025.5.3 pytest-homeassistant-custom-component==0.13.246
 run_next_test "auto"
+
+pip3 install -qq homeassistant==2025.6.3 pytest-homeassistant-custom-component==0.13.254
+run_next_test "auto"
