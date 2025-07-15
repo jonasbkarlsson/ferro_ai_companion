@@ -26,6 +26,7 @@ from ..const import (
     MODE_PEAK_SELL,
     MODE_SELF,
     MODE_SELL,
+    OVERRIDE_OFFSET,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -160,6 +161,11 @@ class OperationSettings:
             self.discharge_threshold_w = -100000.0
             self.charge_threshold_w = -100000.0
 
+        # Apply the override offset to the thresholds
+        # to ensure they are not equal to the original values
+        self.discharge_threshold_w += OVERRIDE_OFFSET
+        self.charge_threshold_w += OVERRIDE_OFFSET
+
         await self.update_thresholds()
 
     async def stop_override(self) -> None:
@@ -202,10 +208,18 @@ class OperationSettings:
 
     async def get_mode(self) -> str:
         """Get the current mode."""
-        return await self.determine_mode(
-            self.discharge_threshold_w,
-            self.charge_threshold_w,
-        )
+        if self.override_active:
+            # If override is active, remove the offset
+            return await self.determine_mode(
+                self.discharge_threshold_w - OVERRIDE_OFFSET,
+                self.charge_threshold_w - OVERRIDE_OFFSET,
+            )
+        else:
+            # If override is not active
+            return await self.determine_mode(
+                self.discharge_threshold_w,
+                self.charge_threshold_w,
+            )
 
     async def get_original_mode(self) -> str:
         """Get the original mode."""
