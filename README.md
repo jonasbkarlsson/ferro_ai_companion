@@ -87,6 +87,10 @@ Ferro AI: Discharging. High electricity prices and solar power on the way. The b
 
 Maximum export to the grid.
 
+## Notes
+
+When this integration overrides the Ferro AI mode, it sets the discharge and charge thresholds to values which are 1 W lower than the values used by Ferro AI, in order to be be able to detect changes in the Ferro AI mode. For example, if Ferro AI would set the discharge threshold to 0 for a certain mode, this integration will set it to -1.
+
 [ferro_ai_companion]: https://github.com/jonasbkarlsson/ferro_ai_companion
 [releases-shield]: https://img.shields.io/github/v/release/jonasbkarlsson/ferro_ai_companion?style=for-the-badge
 [releases]: https://github.com/jonasbkarlsson/ferro_ai_companion/releases
