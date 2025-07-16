@@ -27,9 +27,13 @@ It might take up to 24 hours until the integration has learned the peak shaving 
 ## Installation
 
 ### HACS
-1. In Home Assistant go to HACS -> Integrations. Click on the three dots in the upper-right corner and select "Custom repositories". Paste the URL [ferro_ai_companion](https://github.com/jonasbkarlsson/ferro_ai_companion) into the Repository field. In Category select Integration. Click on ADD.
-2. In Home Assistant go to HACS -> Integrations. Click on "+ Explore & Download Repositories" and search for "Ferro AI Companion".
-3. In Home Assistant go to Settings -> Devices & Services -> Integrations. Click on "+ Add integration" and search for "Ferro AI Companion".
+1. In Home Assistant go to HACS and search for "Ferro AI Companion". Click on "Ferro AI Companion" and then on "Download".
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jonasbkarlsson&repository=ferro_ai_companion&category=integration)
+
+2. In Home Assistant go to Settings -> Devices & Services -> Integrations. Click on "+ Add integration" and search for "Ferro AI Companion".
+
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=ferro_ai_companion)
 
 ### Manual
 
@@ -99,7 +103,7 @@ When this integration overrides the Ferro AI mode, it sets the discharge and cha
 [license-shield]: https://img.shields.io/github/license/jonasbkarlsson/ferro_ai_companion?style=for-the-badge
 [license]: https://github.com/jonasbkarlsson/ferro_ai_companion/blob/main/LICENSE
 [hacs]: https://github.com/hacs/integration
-[hacsbadge]: https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge
+[hacsbadge]: https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Jonas%20Karlsson%20@jonasbkarlsson-41BDF5.svg?style=for-the-badge
 [user_profile]: https://github.com/jonasbkarlsson
 [buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-FFDD00.svg?style=for-the-badge&logo=buymeacoffee
