@@ -278,12 +278,12 @@ class FerroAICompanionCoordinator:
             self.secondary_peak_shaving_target_w,
         )
 
-        if self.primary_peak_shaving_target_w == 0:
-            if self.operation_settings.original_discharge_threshold_w > 0:
+        if self.primary_peak_shaving_target_w <= 10:
+            if self.operation_settings.original_discharge_threshold_w > 10:
                 self.primary_peak_shaving_target_w = (
                     self.operation_settings.original_discharge_threshold_w
                 )
-        elif self.operation_settings.original_discharge_threshold_w > 0:
+        elif self.operation_settings.original_discharge_threshold_w > 10:
             if (
                 0.6
                 < (
