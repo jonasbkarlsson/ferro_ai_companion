@@ -233,15 +233,15 @@ class OperationSettings:
     ) -> str:
         """Determine the mode."""
         # discharge_threshold_w is always equal or larger than charge_threshold_w
-        if discharge_threshold_w > 0 and charge_threshold_w == 0:
+        if discharge_threshold_w > 10 and charge_threshold_w in list(range(10)):
             return MODE_PEAK_CHARGE
-        elif discharge_threshold_w > 0 and charge_threshold_w > 0:
+        elif discharge_threshold_w > 10 and charge_threshold_w > 10:
             return MODE_BUY
-        elif discharge_threshold_w > 0 and charge_threshold_w < 0:
+        elif discharge_threshold_w > 10 and charge_threshold_w < 0:
             return MODE_PEAK_SELL
         elif discharge_threshold_w < 0 and charge_threshold_w < 0:
             return MODE_SELL
         else:
-            # discharge_threshold_w == 0 and charge_threshold_w == 0
-            # discharge_threshold_w == 0 and charge_threshold_w < 0
+            # discharge_threshold_w in list(range(10)) and charge_threshold_w in list(range(10))
+            # discharge_threshold_w in list(range(10)) and charge_threshold_w < 0
             return MODE_SELF
