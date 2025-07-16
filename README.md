@@ -28,9 +28,11 @@ It might take up to 24 hours until the integration has learned the peak shaving 
 
 ### HACS
 1. In Home Assistant go to HACS and search for "Ferro AI Companion". Click on "Ferro AI Companion" and then on "Download".
+
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jonasbkarlsson&repository=ferro_ai_companion&category=integration)
 
 2. In Home Assistant go to Settings -> Devices & Services -> Integrations. Click on "+ Add integration" and search for "Ferro AI Companion".
+
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=ferro_ai_companion)
 
 ### Manual
