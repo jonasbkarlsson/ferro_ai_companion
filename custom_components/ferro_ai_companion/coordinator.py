@@ -1,6 +1,7 @@
 """Coordinator for Ferro AI Companion"""
 
 import asyncio
+import math
 from datetime import datetime
 import logging
 from random import randint
@@ -270,53 +271,7 @@ class FerroAICompanionCoordinator:
         _LOGGER.debug("Original mode = %s", mode)
 
         # Update the peak shaving targets
-        _LOGGER.debug(
-            "self.primary_peak_shaving_target = %s", self.primary_peak_shaving_target_w
-        )
-        _LOGGER.debug(
-            "self.secondary_peak_shaving_target = %s",
-            self.secondary_peak_shaving_target_w,
-        )
-
-        if self.primary_peak_shaving_target_w <= 4:
-            if self.operation_settings.original_discharge_threshold_w > 4:
-                self.primary_peak_shaving_target_w = (
-                    self.operation_settings.original_discharge_threshold_w
-                )
-        elif self.operation_settings.original_discharge_threshold_w > 4:
-            if (
-                0.6
-                < (
-                    self.operation_settings.original_discharge_threshold_w
-                    / self.primary_peak_shaving_target_w
-                )
-                < 1.4
-            ):
-                # If the new value is within 40% of the previous value, update the previous value.
-                self.primary_peak_shaving_target_w = (
-                    self.operation_settings.original_discharge_threshold_w
-                )
-            elif (
-                self.operation_settings.original_discharge_threshold_w
-                / self.primary_peak_shaving_target_w
-            ) >= 1.4:
-                # If the new value is more than 40% higher than the previous primary value,
-                # update the secondary value.
-                self.secondary_peak_shaving_target_w = (
-                    self.operation_settings.original_discharge_threshold_w
-                )
-            elif (
-                self.operation_settings.original_discharge_threshold_w
-                / self.primary_peak_shaving_target_w
-            ) <= 0.6:
-                # If the new value is more than 40% lower than the previous primaryvalue,
-                # update both primary and secondary value.
-                self.secondary_peak_shaving_target_w = (
-                    self.primary_peak_shaving_target_w
-                )
-                self.primary_peak_shaving_target_w = (
-                    self.operation_settings.original_discharge_threshold_w
-                )
+        self.update_peak_shaving_targets()
 
         # Update the peak shaving target sensors if they are not equal to the current values.
         if (
@@ -358,6 +313,66 @@ class FerroAICompanionCoordinator:
             self.sensor_secondary_peak_shaving_target.set(
                 self.secondary_peak_shaving_target_w
             )
+
+    def update_peak_shaving_targets(self):
+        """Update the peak shaving targets based on the current operation settings."""
+
+        _LOGGER.debug(
+            "self.primary_peak_shaving_target = %s", self.primary_peak_shaving_target_w
+        )
+        _LOGGER.debug(
+            "self.secondary_peak_shaving_target = %s",
+            self.secondary_peak_shaving_target_w,
+        )
+
+        upper_limit = 1.4
+        if self.secondary_peak_shaving_target_w > self.primary_peak_shaving_target_w:
+            upper_limit = (
+                math.sqrt(
+                    self.secondary_peak_shaving_target_w
+                    * self.primary_peak_shaving_target_w
+                )
+                / self.primary_peak_shaving_target_w
+            )
+        if self.primary_peak_shaving_target_w <= 4:
+            if self.operation_settings.original_discharge_threshold_w > 4:
+                self.primary_peak_shaving_target_w = (
+                    self.operation_settings.original_discharge_threshold_w
+                )
+        elif self.operation_settings.original_discharge_threshold_w > 4:
+            if (
+                0.6
+                < (
+                    self.operation_settings.original_discharge_threshold_w
+                    / self.primary_peak_shaving_target_w
+                )
+                < upper_limit
+            ):
+                # If the new value is within 40% of the previous value, update the previous value.
+                self.primary_peak_shaving_target_w = (
+                    self.operation_settings.original_discharge_threshold_w
+                )
+            elif (
+                self.operation_settings.original_discharge_threshold_w
+                / self.primary_peak_shaving_target_w
+            ) >= upper_limit:
+                # If the new value is more than 40% higher than the previous primary value,
+                # update the secondary value.
+                self.secondary_peak_shaving_target_w = (
+                    self.operation_settings.original_discharge_threshold_w
+                )
+            elif (
+                self.operation_settings.original_discharge_threshold_w
+                / self.primary_peak_shaving_target_w
+            ) <= 0.6:
+                # If the new value is more than 40% lower than the previous primaryvalue,
+                # update both primary and secondary value.
+                self.secondary_peak_shaving_target_w = (
+                    self.primary_peak_shaving_target_w
+                )
+                self.primary_peak_shaving_target_w = (
+                    self.operation_settings.original_discharge_threshold_w
+                )
 
         _LOGGER.debug(
             "self.primary_peak_shaving_target = %s", self.primary_peak_shaving_target_w
