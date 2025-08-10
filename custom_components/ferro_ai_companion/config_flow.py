@@ -10,7 +10,16 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
+
 from .const import (
+    CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT,
+    CAPACITY_TARIFF_OPTIONS,
+    CONF_CAPACITY_TARIFF,
     CONF_DEVICE_NAME,
     CONF_EV_SOC_SENSOR,
     CONF_EV_TARGET_SOC_SENSOR,
@@ -30,7 +39,7 @@ _LOGGER = logging.getLogger(__name__)
 class FerroAICompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow."""
 
-    VERSION = 1
+    VERSION = 2
     user_input: Optional[dict[str, Any]]
 
     def __init__(self):
@@ -61,6 +70,7 @@ class FerroAICompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input[CONF_DEVICE_NAME] = DeviceNameCreator.create(self.hass)
             user_input[CONF_SETTINGS_ENTITY] = FindEntity.find_setting_entity(self.hass)
             user_input[CONF_MQTT_ENTITY] = FindEntity.find_mqtt_entity(self.hass)
+            user_input[CONF_CAPACITY_TARIFF] = CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT
             user_input[CONF_SOLAR_EV_CHARGING_ENABLED] = False
 
         else:
@@ -94,6 +104,16 @@ class FerroAICompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(
                 CONF_MQTT_ENTITY, default=user_input[CONF_MQTT_ENTITY]
             ): cv.string,
+            vol.Required(
+                CONF_CAPACITY_TARIFF, default=user_input[CONF_CAPACITY_TARIFF]
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=CAPACITY_TARIFF_OPTIONS,
+                    multiple=False,
+                    translation_key="capacity_tariff_options",
+                    mode=SelectSelectorMode.LIST,
+                )
+            ),
             # vol.Required(
             #     CONF_SOLAR_EV_CHARGING_ENABLED,
             #     default=user_input[CONF_SOLAR_EV_CHARGING_ENABLED],
@@ -206,6 +226,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_MQTT_ENTITY,
                 default=get_parameter(self.config_entry, CONF_MQTT_ENTITY),
             ): cv.string,
+            vol.Required(
+                CONF_CAPACITY_TARIFF,
+                default=get_parameter(self.config_entry, CONF_CAPACITY_TARIFF),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=CAPACITY_TARIFF_OPTIONS,
+                    multiple=False,
+                    translation_key="capacity_tariff_options",
+                    mode=SelectSelectorMode.LIST,
+                )
+            ),
             # vol.Required(
             #     CONF_SOLAR_EV_CHARGING_ENABLED,
             #     default=get_parameter(

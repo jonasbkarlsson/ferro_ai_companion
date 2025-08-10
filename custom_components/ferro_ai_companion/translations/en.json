@@ -7,6 +7,7 @@
                     "device_name": "Name",
                     "settings_entity": "Any Ferroamp Operation Settings entity",
                     "mqtt_entity": "Any Ferroamp Sensor entity",
+                    "capacity_tariff": "Capacity-based tariff",
                     "solar_ev_charging_enabled": "Enable solar EV charging"
                 }
             },
@@ -35,6 +36,7 @@
                 "data": {
                     "settings_entity": "Any Ferroamp Operation Settings entity",
                     "mqtt_entity": "Any Ferroamp Sensor entity",
+                    "capacity_tariff": "Capacity-based tariff",
                     "solar_ev_charging_enabled": "Enable solar EV charging"
                 }
             },
@@ -54,6 +56,15 @@
             "ev_soc_invalid_data": "The SOC entity gives invalid data.",
             "ev_target_soc_not_found": "EV Target SOC entity not found.",
             "ev_target_soc_invalid_data": "The Target SOC entity gives invalid data."
+        }
+    },
+    "selector": {
+        "capacity_tariff_options": {
+            "options": {
+                "none": "None",
+                "same_day_night": "Same during day and night",
+                "different_day_night": "Different for day and night"
+            }
         }
     },
     "entity": {
