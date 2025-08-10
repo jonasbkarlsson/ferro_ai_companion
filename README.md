@@ -54,8 +54,9 @@ Parameter | Required | Description
 Name | Yes | The name of the instance.
 Ferroamp Operation Settings entity | Yes | Any Ferroamp Operation Settings entity.
 Ferroamp MQTT Sensor entity | Yes | Any Ferroamp MQTT Sensor entity.
+Capacity-based tariff | Yes | Can be `None`, `Same during day and night` or `Different for day and night`. Should be set to the same value as configured for Ferro AI.
 
-The integration will automatically provide values for these parameters. If there are more than one instance of any of the two required integrations, make sure the provided entities are from the correct instance.
+The integration will automatically provide values for some of these parameters. If there are more than one instance of any of the two required integrations, make sure the provided entities are from the correct instance.
 
 With the exception of Name, the above configuration items can be changed after intial configuration in Settings -> Devices & Services -> Integrations -> Ferro AI Companion -> 1 device -> Configure. To change Name, the native way to rename Integrations or Devices in Home Assistant can be used.
 

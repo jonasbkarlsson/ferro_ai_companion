@@ -17,6 +17,8 @@ from homeassistant.util import dt
 
 from .coordinator import FerroAICompanionCoordinator
 from .const import (
+    CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT,
+    CONF_CAPACITY_TARIFF,
     DOMAIN,
     STARTUP_MESSAGE,
     PLATFORMS,
@@ -115,10 +117,11 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry):
     migration = False
     version = config_entry.version
 
-    # if version == 1:
-    #     # Set default values for new configuration parameters
-    #     version = 2
-    #     migration = True
+    if version == 1:
+        # Set default values for new configuration parameters
+        new[CONF_CAPACITY_TARIFF] = CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT
+        version = 2
+        migration = True
 
     if version > 2:
         _LOGGER.error(

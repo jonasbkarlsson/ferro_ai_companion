@@ -53,11 +53,22 @@ ENTITY_KEY_COMPANION_MODE_SELECT = "companion_mode"
 CONF_DEVICE_NAME = "device_name"
 CONF_SETTINGS_ENTITY = "settings_entity"
 CONF_MQTT_ENTITY = "mqtt_entity"
+CONF_CAPACITY_TARIFF = "capacity_tariff"
 CONF_SOLAR_EV_CHARGING_ENABLED = "solar_ev_charging_enabled"
 CONF_SOLAR_FORECAST_TODAY_REMAINING = "solar_forecast_today_remaining"
 CONF_EV_SOC_SENSOR = "ev_soc_sensor"
 CONF_EV_TARGET_SOC_SENSOR = "ev_target_soc_sensor"
 CONF_NUMBER_OF_PHASES = "number_of_phases"
+
+CAPACITY_TARIFF_NONE = "none"
+CAPACITY_TARIFF_SAME_DAY_NIGHT = "same_day_night"
+CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT = "different_day_night"
+
+CAPACITY_TARIFF_OPTIONS = [
+    CAPACITY_TARIFF_NONE,
+    CAPACITY_TARIFF_SAME_DAY_NIGHT,
+    CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT,
+]
 
 MODE_AUTO = "auto"
 MODE_SELF = "self"

@@ -35,6 +35,10 @@ from homeassistant.helpers.entity_registry import (
 from homeassistant.util import dt
 
 from .const import (
+    CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT,
+    CAPACITY_TARIFF_NONE,
+    CAPACITY_TARIFF_SAME_DAY_NIGHT,
+    CONF_CAPACITY_TARIFF,
     CONF_EV_SOC_SENSOR,
     CONF_EV_TARGET_SOC_SENSOR,
     CONF_MQTT_ENTITY,
@@ -110,6 +114,7 @@ class FerroAICompanionCoordinator:
         self.operation_settings = OperationSettings(
             hass, config_entry, get_parameter(self.config_entry, CONF_SETTINGS_ENTITY)
         )
+        self.capacity_tariff = get_parameter(self.config_entry, CONF_CAPACITY_TARIFF)
         self.solar_ev_charging = None
         if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
             self.solar_ev_charging = SolarEVCharging(
@@ -205,6 +210,13 @@ class FerroAICompanionCoordinator:
                 self.secondary_peak_shaving_target_w = data.get(
                     "secondary_peak_shaving_target_w", 0.0
                 )  # Default to 0 if not set
+                if self.capacity_tariff == CAPACITY_TARIFF_NONE:
+                    # If no capacity tariff, set the targets to 0
+                    self.primary_peak_shaving_target_w = 0.0
+                    self.secondary_peak_shaving_target_w = 0.0
+                if self.capacity_tariff == CAPACITY_TARIFF_SAME_DAY_NIGHT:
+                    # If same day/night tariff, set the night targets to 0
+                    self.secondary_peak_shaving_target_w = 0.0
                 self.sensor_peak_shaving_target.set(self.primary_peak_shaving_target_w)
                 self.sensor_secondary_peak_shaving_target.set(
                     self.secondary_peak_shaving_target_w
@@ -325,54 +337,64 @@ class FerroAICompanionCoordinator:
             self.secondary_peak_shaving_target_w,
         )
 
-        upper_limit = 1.4
-        if self.secondary_peak_shaving_target_w > self.primary_peak_shaving_target_w:
-            upper_limit = (
-                math.sqrt(
-                    self.secondary_peak_shaving_target_w
-                    * self.primary_peak_shaving_target_w
-                )
-                / self.primary_peak_shaving_target_w
-            )
-        if self.primary_peak_shaving_target_w <= 4:
+        if self.capacity_tariff == CAPACITY_TARIFF_SAME_DAY_NIGHT:
             if self.operation_settings.original_discharge_threshold_w > 4:
                 self.primary_peak_shaving_target_w = (
                     self.operation_settings.original_discharge_threshold_w
                 )
-        elif self.operation_settings.original_discharge_threshold_w > 4:
+        elif self.capacity_tariff == CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT:
+
+            upper_limit = 1.4
             if (
-                0.6
-                < (
-                    self.operation_settings.original_discharge_threshold_w
+                self.secondary_peak_shaving_target_w
+                > self.primary_peak_shaving_target_w
+            ):
+                upper_limit = (
+                    math.sqrt(
+                        self.secondary_peak_shaving_target_w
+                        * self.primary_peak_shaving_target_w
+                    )
                     / self.primary_peak_shaving_target_w
                 )
-                < upper_limit
-            ):
-                # If the new value is within 40% of the previous value, update the previous value.
-                self.primary_peak_shaving_target_w = (
+            if self.primary_peak_shaving_target_w <= 4:
+                if self.operation_settings.original_discharge_threshold_w > 4:
+                    self.primary_peak_shaving_target_w = (
+                        self.operation_settings.original_discharge_threshold_w
+                    )
+            elif self.operation_settings.original_discharge_threshold_w > 4:
+                if (
+                    0.6
+                    < (
+                        self.operation_settings.original_discharge_threshold_w
+                        / self.primary_peak_shaving_target_w
+                    )
+                    < upper_limit
+                ):
+                    # If the new value is within 40% of the previous value, update the previous value.
+                    self.primary_peak_shaving_target_w = (
+                        self.operation_settings.original_discharge_threshold_w
+                    )
+                elif (
                     self.operation_settings.original_discharge_threshold_w
-                )
-            elif (
-                self.operation_settings.original_discharge_threshold_w
-                / self.primary_peak_shaving_target_w
-            ) >= upper_limit:
-                # If the new value is more than 40% higher than the previous primary value,
-                # update the secondary value.
-                self.secondary_peak_shaving_target_w = (
+                    / self.primary_peak_shaving_target_w
+                ) >= upper_limit:
+                    # If the new value is more than 40% higher than the previous primary value,
+                    # update the secondary value.
+                    self.secondary_peak_shaving_target_w = (
+                        self.operation_settings.original_discharge_threshold_w
+                    )
+                elif (
                     self.operation_settings.original_discharge_threshold_w
-                )
-            elif (
-                self.operation_settings.original_discharge_threshold_w
-                / self.primary_peak_shaving_target_w
-            ) <= 0.6:
-                # If the new value is more than 40% lower than the previous primaryvalue,
-                # update both primary and secondary value.
-                self.secondary_peak_shaving_target_w = (
-                    self.primary_peak_shaving_target_w
-                )
-                self.primary_peak_shaving_target_w = (
-                    self.operation_settings.original_discharge_threshold_w
-                )
+                    / self.primary_peak_shaving_target_w
+                ) <= 0.6:
+                    # If the new value is more than 40% lower than the previous primaryvalue,
+                    # update both primary and secondary value.
+                    self.secondary_peak_shaving_target_w = (
+                        self.primary_peak_shaving_target_w
+                    )
+                    self.primary_peak_shaving_target_w = (
+                        self.operation_settings.original_discharge_threshold_w
+                    )
 
         _LOGGER.debug(
             "self.primary_peak_shaving_target = %s", self.primary_peak_shaving_target_w
