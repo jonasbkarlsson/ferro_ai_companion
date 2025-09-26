@@ -193,9 +193,9 @@ class OperationSettings:
         if self.override_active and mode == MODE_BUY:
             if capacity_tariff == CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT:
                 if is_nighttime():
-                    buy_power = peak_shaving_threshold * 2.0 + BUY_POWER_OFFSET
+                    buy_power = peak_shaving_threshold * 2.0 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
                 else:
-                    buy_power = peak_shaving_threshold + BUY_POWER_OFFSET
+                    buy_power = peak_shaving_threshold + BUY_POWER_OFFSET + OVERRIDE_OFFSET
                 # If the threshold has been changed, update.
                 if self.discharge_threshold_w != buy_power:
                     self.discharge_threshold_w = buy_power
