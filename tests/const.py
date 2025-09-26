@@ -1,6 +1,7 @@
 """Constants for ferro_ai_companion tests."""
 
 from custom_components.ferro_ai_companion.const import (
+    CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT,
     CONF_CAPACITY_TARIFF,
     CONF_DEVICE_NAME,
     CONF_EV_SOC_SENSOR,
@@ -17,6 +18,13 @@ from custom_components.ferro_ai_companion.const import (
 MOCK_CONFIG_USER = {
     CONF_SETTINGS_ENTITY: "sensor.ferroamp_operation_settting_any",
     CONF_MQTT_ENTITY: "sensor.ferroamp_any",
+    CONF_CAPACITY_TARIFF: CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT,
+}
+
+MOCK_CONFIG_USER_TEMP1 = {
+    CONF_SETTINGS_ENTITY: "sensor.ferroamp_operation_settting_any",
+    CONF_MQTT_ENTITY: "sensor.ferroamp_any",
+    CONF_CAPACITY_TARIFF: CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT,
     CONF_SOLAR_EV_CHARGING_ENABLED: False,
 }
 
@@ -24,6 +32,7 @@ MOCK_CONFIG_USER_EXTRA = {
     CONF_DEVICE_NAME: NAME,
     CONF_SETTINGS_ENTITY: "sensor.ferroamp_operation_settting_any",
     CONF_MQTT_ENTITY: "sensor.ferroamp_any",
+    CONF_CAPACITY_TARIFF: CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT,
     CONF_SOLAR_EV_CHARGING_ENABLED: False,
 }
 
