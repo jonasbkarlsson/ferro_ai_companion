@@ -129,15 +129,14 @@ def bypass_is_during_intialization_fixture():
         yield
 
 
-def mock_operation_settings_fetch_all_data(self: OperationSettings):
+async def mock_operation_settings_fetch_all_data(instance: OperationSettings):
     """Mock function for operation_settings.fetch_all_data."""
     print("Mock function executed!")
-    self.max_soc = 100.0
-    self.discharge_threshold_w = 1000
-    self.charge_threshold_w = 500
-    self.original_discharge_threshold_w = 1000
-    self.original_charge_threshold_w = 500
-    return None
+    instance.max_soc = 100.0
+    instance.discharge_threshold_w = 1000
+    instance.charge_threshold_w = 500
+    instance.original_discharge_threshold_w = 1000
+    instance.original_charge_threshold_w = 500
 
 
 # This fixture will mock the function fetch_all_data in result in OperationSettings.
@@ -146,7 +145,7 @@ def mock_operation_settings_fetch_all_data_fixture():
     """Mock operation_settings.fetch_all_data."""
     with patch(
         "custom_components.ferro_ai_companion.helpers.operation_settings.OperationSettings.fetch_all_data",
-        side_effect=mock_operation_settings_fetch_all_data,
+        new=mock_operation_settings_fetch_all_data,
     ):
         yield
 
