@@ -70,6 +70,8 @@ Entity | Type | Description
 `sensor.ferro_ai_companion_secondary_peak_shaving_target` | Sensor | If Ferro AI is configured to reduce peak power to two different levels (one during day, one during night), this sensor will show the night threshold.
 `switch.select.ferro_ai_companion_companion_mode` | Select | If set to `Auto`, Ferro AI will control EnergyHub mode. Override by setting to `Peak shaving with charging`, `Peak shaving with selling`, `Self consumption`, `Buy` or `Sell`.
 
+To set `switch.select.ferro_ai_companion_companion_mode` in automations, use the options `auto`, `peak_charge`, `peak_sell`, `self`, `buy` and `sell`.
+
 ## Modes
 ### Peak shaving with charging
 Ferro AI: Awaiting discharge. The battery is in standby, reserving energy for upcoming events.
@@ -95,6 +97,8 @@ Maximum export to the grid.
 ## Notes
 
 When this integration overrides the Ferro AI mode, it sets the discharge and charge thresholds to values which are 1 W higher than the values used by Ferro AI, in order to be be able to detect changes in the Ferro AI mode. For example, if Ferro AI would set the discharge threshold to 0.0 for a certain mode, this integration will set it to 1.0.
+
+Also, if `switch.select.ferro_ai_companion_companion_mode` is set to `Buy`, the charge threshold will be set 200 W lower than the current peak shaving target. If `Capacity-based tariff` is set to `Different for day and night`, the `sensor.ferro_ai_companion_secondary_peak_shaving_target` value minus 200 W will be used between 22:00 and 06:00.
 
 [ferro_ai_companion]: https://github.com/jonasbkarlsson/ferro_ai_companion
 [releases-shield]: https://img.shields.io/github/v/release/jonasbkarlsson/ferro_ai_companion?style=for-the-badge

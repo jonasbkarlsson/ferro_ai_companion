@@ -278,6 +278,10 @@ class FerroAICompanionCoordinator:
         self.sensor_mode.set(mode)
         _LOGGER.debug("Mode = %s", mode)
 
+        await self.operation_settings.update_override(
+            mode, self.primary_peak_shaving_target_w, self.capacity_tariff
+        )
+
         mode = await self.operation_settings.get_original_mode()
         self.sensor_original_mode.set(mode)
         _LOGGER.debug("Original mode = %s", mode)
@@ -370,7 +374,8 @@ class FerroAICompanionCoordinator:
                     )
                     < upper_limit
                 ):
-                    # If the new value is within 40% of the previous value, update the previous value.
+                    # If the new value is within 40% of the previous value,
+                    # update the previous value.
                     self.primary_peak_shaving_target_w = (
                         self.operation_settings.original_discharge_threshold_w
                     )
@@ -498,7 +503,7 @@ class FerroAICompanionCoordinator:
                 await self.operation_settings.stop_override()
             else:
                 await self.operation_settings.override(
-                    new_state, self.primary_peak_shaving_target_w
+                    new_state, self.primary_peak_shaving_target_w, self.capacity_tariff
                 )
 
             # Update the modes

@@ -19,8 +19,13 @@ from homeassistant.helpers.entity_registry import (
     EntityRegistry,
 )
 
+from custom_components.ferro_ai_companion.helpers.general import is_nighttime
+
 
 from ..const import (
+    BUY_POWER_OFFSET,
+    CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT,
+    CAPACITY_TARIFF_NONE,
     MODE_BUY,
     MODE_PEAK_CHARGE,
     MODE_PEAK_SELL,
@@ -132,7 +137,10 @@ class OperationSettings:
         except (ValueError, TypeError) as e:
             _LOGGER.error("Failed to fetch operation settings data: %s", e)
 
-    async def override(self, mode: str, peak_shaving_threshold: float) -> None:
+    async def override(self,
+                       mode: str,
+                       peak_shaving_threshold: float,
+                       capacity_tariff: str) -> None:
         """Override the operation settings."""
 
         _LOGGER.debug("Fetching data.")
@@ -155,8 +163,16 @@ class OperationSettings:
                 self.discharge_threshold_w = 1000
                 self.charge_threshold_w = 1000
             else:
-                self.discharge_threshold_w = peak_shaving_threshold
-                self.charge_threshold_w = peak_shaving_threshold
+                # If no capacity tariff, buy with maximum power
+                if capacity_tariff == CAPACITY_TARIFF_NONE:
+                    self.discharge_threshold_w = 100000.0
+                    self.charge_threshold_w = 100000.0
+                else:
+                    self.discharge_threshold_w = peak_shaving_threshold + BUY_POWER_OFFSET
+                    self.charge_threshold_w = peak_shaving_threshold + BUY_POWER_OFFSET
+                    if capacity_tariff == CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT and is_nighttime():
+                        self.discharge_threshold_w = peak_shaving_threshold * 2.0 + BUY_POWER_OFFSET
+                        self.charge_threshold_w = peak_shaving_threshold * 2.0 + BUY_POWER_OFFSET
         if mode == MODE_SELL:
             self.discharge_threshold_w = -100000.0
             self.charge_threshold_w = -100000.0
@@ -167,6 +183,24 @@ class OperationSettings:
         self.charge_threshold_w += OVERRIDE_OFFSET
 
         await self.update_thresholds()
+
+    async def update_override(self,
+                              mode: str,
+                              peak_shaving_threshold: float,
+                              capacity_tariff: str) -> None:
+        """Update the operation settings."""
+
+        if self.override_active and mode == MODE_BUY:
+            if capacity_tariff == CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT:
+                if is_nighttime():
+                    buy_power = peak_shaving_threshold * 2.0 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
+                else:
+                    buy_power = peak_shaving_threshold + BUY_POWER_OFFSET + OVERRIDE_OFFSET
+                # If the threshold has been changed, update.
+                if self.discharge_threshold_w != buy_power:
+                    self.discharge_threshold_w = buy_power
+                    self.charge_threshold_w = buy_power
+                    await self.update_thresholds()
 
     async def stop_override(self) -> None:
         """Stop the override of operation settings."""
