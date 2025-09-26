@@ -150,12 +150,11 @@ def mock_operation_settings_fetch_all_data_fixture():
         yield
 
 
-def mock_solar_ev_charging_fetch_all_data(self: SolarEVCharging):
+async def mock_solar_ev_charging_fetch_all_data(instance: SolarEVCharging):
     """Mock function for solar_ev_charging.fetch_all_data."""
     print("Mock function executed!")
-    self.external_voltage_v = 230.0
-    self.total_rated_soc_wh = 17700
-    return None
+    instance.external_voltage_v = 230.0
+    instance.total_rated_soc_wh = 17700
 
 
 # This fixture will mock the function fetch_all_data in result in SolarEVCharging.
@@ -164,6 +163,6 @@ def mock_solar_ev_charging_fetch_all_data_fixture():
     """Mock operation_settings.fetch_all_data."""
     with patch(
         "custom_components.ferro_ai_companion.helpers.solar_ev_charging.SolarEVCharging.fetch_all_data",
-        side_effect=mock_solar_ev_charging_fetch_all_data,
+        new=mock_solar_ev_charging_fetch_all_data,
     ):
         yield
