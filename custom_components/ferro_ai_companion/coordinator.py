@@ -45,6 +45,7 @@ from .const import (
     CONF_SETTINGS_ENTITY,
     CONF_SOLAR_EV_CHARGING_ENABLED,
     CONF_SOLAR_FORECAST_TODAY_REMAINING,
+    ENTITY_KEY_AVOID_SELLING_SWITCH,
     ENTITY_KEY_EV_CONNECTED_SWITCH,
     ENTITY_KEY_COMPANION_MODE_SELECT,
     MODE_AUTO,
@@ -91,6 +92,7 @@ class FerroAICompanionCoordinator:
         self.sensor_charging_current = None
         self.sensor_solar_ev_charging = None
 
+        self.switch_avoid_selling = None
         self.switch_ev_connected = None
 
         self.solar_forecast_today_remaining_entity_id = None
@@ -408,6 +410,12 @@ class FerroAICompanionCoordinator:
             "self.secondary_peak_shaving_target = %s",
             self.secondary_peak_shaving_target_w,
         )
+
+    async def switch_avoid_selling_update(self, state: bool):
+        """Handle the Avoid Selling switch"""
+        self.switch_ev_connected = state
+        _LOGGER.debug("switch_avoid_selling_update = %s", state)
+        await self.generate_event(ENTITY_KEY_AVOID_SELLING_SWITCH, not state, state)
 
     async def switch_ev_connected_update(self, state: bool):
         """Handle the EV Connected switch"""

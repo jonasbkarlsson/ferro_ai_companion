@@ -13,7 +13,9 @@ from custom_components.ferro_ai_companion.helpers.general import get_parameter
 from .const import (
     CONF_SOLAR_EV_CHARGING_ENABLED,
     DOMAIN,
+    ENTITY_KEY_AVOID_SELLING_SWITCH,
     ENTITY_KEY_EV_CONNECTED_SWITCH,
+    ICON,
     ICON_CONNECTION,
     SWITCH,
 )
@@ -63,6 +65,31 @@ class FerroAICompanionSwitch(FerroAICompanionEntity, SwitchEntity, RestoreEntity
                 await self.async_turn_on()
             else:
                 await self.async_turn_off()
+
+
+class FerroAICompanionSwitchAvoidSelling(FerroAICompanionSwitch):
+    """Ferro AI Companion Avoid Selling switch class."""
+
+    _entity_key = ENTITY_KEY_AVOID_SELLING_SWITCH
+    _attr_icon = ICON
+
+    def __init__(self, entry, coordinator: FerroAICompanionCoordinator):
+        _LOGGER.debug("FerroAICompanionSwitchAvoidSelling.__init__()")
+        super().__init__(entry, coordinator)
+        if self.is_on is None:
+            self._attr_is_on = False
+            self.update_ha_state()
+        self.coordinator.switch_avoid_selling = self.is_on
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn the entity on."""
+        await super().async_turn_on(**kwargs)
+        await self.coordinator.switch_avoid_selling_update(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn the entity off."""
+        await super().async_turn_off(**kwargs)
+        await self.coordinator.switch_avoid_selling_update(False)
 
 
 class FerroAICompanionSwitchEVConnected(FerroAICompanionSwitch):
