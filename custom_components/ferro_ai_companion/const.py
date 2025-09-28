@@ -17,6 +17,7 @@ ICON_CHARGING = "mdi:battery-charging-30"
 ICON_LIST = "mdi:format-list-bulleted"
 ICON_MODE = "mdi:state-machine"
 ICON_POWER_TARGET = "mdi:transmission-tower"
+ICON_AVOID_SELLING = "mdi:home-battery"
 
 # Platforms
 SENSOR = Platform.SENSOR
