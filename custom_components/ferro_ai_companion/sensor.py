@@ -2,7 +2,7 @@
 
 import logging
 
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
 from homeassistant.const import STATE_ON, STATE_OFF
 from homeassistant.core import HomeAssistant
 
@@ -93,6 +93,7 @@ class FerroAICompanionSensorPeakShavingTarget(FerroAICompanionSensor):
     _entity_key = ENTITY_KEY_PEAK_SHAVING_TARGET_SENSOR
     _attr_icon = ICON_POWER_TARGET
     _attr_device_class = SensorDeviceClass.POWER
+    _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "W"
     _attr_suggested_display_precision = 0
 
@@ -108,6 +109,7 @@ class FerroAICompanionSensorSecondaryPeakShavingTarget(FerroAICompanionSensor):
     _entity_key = ENTITY_KEY_SECONDARY_PEAK_SHAVING_TARGET_SENSOR
     _attr_icon = ICON_POWER_TARGET
     _attr_device_class = SensorDeviceClass.POWER
+    _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "W"
     _attr_suggested_display_precision = 0
 
