@@ -17,6 +17,7 @@ ICON_CHARGING = "mdi:battery-charging-30"
 ICON_LIST = "mdi:format-list-bulleted"
 ICON_MODE = "mdi:state-machine"
 ICON_POWER_TARGET = "mdi:transmission-tower"
+ICON_AVOID_SELLING = "mdi:home-battery"
 
 # Platforms
 SENSOR = Platform.SENSOR
@@ -40,6 +41,7 @@ ENTITY_KEY_PEAK_SHAVING_TARGET_SENSOR = "peak_shaving_target"
 ENTITY_KEY_SECONDARY_PEAK_SHAVING_TARGET_SENSOR = "secondary_peak_shaving_target"
 ENTITY_KEY_SOLAR_EV_CHARGING_SENSOR = "solar_ev_charging"
 ENTITY_KEY_CHARGING_CURRENT_SENSOR = "charging_current"
+ENTITY_KEY_AVOID_SELLING_SWITCH = "avoid_selling"
 
 ENTITY_KEY_EV_CONNECTED_SWITCH = "ev_connected"
 ENTITY_KEY_AVOID_IMPORT_SWITCH = "avoid_import"

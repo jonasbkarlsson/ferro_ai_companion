@@ -62,6 +62,8 @@ With the exception of Name, the above configuration items can be changed after i
 
 ## Entities
 
+Entities other than Sensor can be set using relevant service calls, `select.select_option` and `switch.turn_on`/`switch.turn_off`.
+
 Entity | Type | Description
 -- | -- | --
 `sensor.ferro_ai_companion_energyhub_mode` | Sensor | Operation mode used by EnergyHub. Will be the same as the `Ferro AI mode` if `Companion mode` is set to `Auto`. Can be `Peak shaving with charging`, `Peak shaving with selling`, `Self consumption`, `Buy` or `Sell`.
@@ -69,6 +71,7 @@ Entity | Type | Description
 `sensor.ferro_ai_companion_peak_shaving_target` | Sensor | The peak shaving threshold used by Ferro AI to reduce peak power.
 `sensor.ferro_ai_companion_secondary_peak_shaving_target` | Sensor | If Ferro AI is configured to reduce peak power to two different levels (one during day, one during night), this sensor will show the night threshold.
 `switch.select.ferro_ai_companion_companion_mode` | Select | If set to `Auto`, Ferro AI will control EnergyHub mode. Override by setting to `Peak shaving with charging`, `Peak shaving with selling`, `Self consumption`, `Buy` or `Sell`.
+`switch.ferro_ai_companion_avoid_selling` | Switch | When companion mode is set to `Auto`, turning this switch on will avoid selling. If Ferro AI use `Peak shaving with selling` or `Sell`, it will be override with `Peak shaving with charging`.
 
 To set `switch.select.ferro_ai_companion_companion_mode` in automations, use the options `auto`, `peak_charge`, `peak_sell`, `self`, `buy` and `sell`.
 

@@ -123,6 +123,7 @@
             }
         },
         "switch": {
+            "avoid_selling": { "name": "Avoid selling" },
             "ev_connected": { "name": "EV connected" }
         }
     }

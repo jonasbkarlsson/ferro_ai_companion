@@ -45,9 +45,13 @@ from .const import (
     CONF_SETTINGS_ENTITY,
     CONF_SOLAR_EV_CHARGING_ENABLED,
     CONF_SOLAR_FORECAST_TODAY_REMAINING,
+    ENTITY_KEY_AVOID_SELLING_SWITCH,
     ENTITY_KEY_EV_CONNECTED_SWITCH,
     ENTITY_KEY_COMPANION_MODE_SELECT,
     MODE_AUTO,
+    MODE_PEAK_CHARGE,
+    MODE_PEAK_SELL,
+    MODE_SELL,
 )
 from .helpers.general import Validator, get_parameter
 from .helpers.operation_settings import OperationSettings
@@ -91,7 +95,10 @@ class FerroAICompanionCoordinator:
         self.sensor_charging_current = None
         self.sensor_solar_ev_charging = None
 
+        self.switch_avoid_selling = None
         self.switch_ev_connected = None
+
+        self.select_companion_mode = None
 
         self.solar_forecast_today_remaining_entity_id = None
         self.ev_soc_entity_id = None
@@ -261,6 +268,20 @@ class FerroAICompanionCoordinator:
 
         # Fetch data
         await self.operation_settings.fetch_all_data()
+
+        # Handle avoid selling
+        if self.select_companion_mode == MODE_AUTO and self.switch_avoid_selling:
+            mode = await self.operation_settings.get_original_mode()
+            if self.operation_settings.override_active:
+                if mode not in [MODE_SELL, MODE_PEAK_SELL]:
+                    await self.operation_settings.stop_override()
+            else:
+                if mode in [MODE_SELL, MODE_PEAK_SELL]:
+                    new_mode = MODE_PEAK_CHARGE
+                    await self.operation_settings.override(
+                        new_mode, self.primary_peak_shaving_target_w, self.capacity_tariff
+                    )
+
         if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
             await self.solar_ev_charging.fetch_all_data()
 
@@ -409,6 +430,12 @@ class FerroAICompanionCoordinator:
             self.secondary_peak_shaving_target_w,
         )
 
+    async def switch_avoid_selling_update(self, state: bool):
+        """Handle the Avoid Selling switch"""
+        self.switch_avoid_selling = state
+        _LOGGER.debug("switch_avoid_selling_update = %s", state)
+        await self.generate_event(ENTITY_KEY_AVOID_SELLING_SWITCH, not state, state)
+
     async def switch_ev_connected_update(self, state: bool):
         """Handle the EV Connected switch"""
         self.switch_ev_connected = state
@@ -499,8 +526,17 @@ class FerroAICompanionCoordinator:
 
         # Handle companion mode select
         if entity_id == ENTITY_KEY_COMPANION_MODE_SELECT:
+            self.select_companion_mode = new_state
             if new_state == MODE_AUTO:
                 await self.operation_settings.stop_override()
+                if self.switch_avoid_selling:
+                    mode = await self.operation_settings.get_mode()
+                    if mode == MODE_SELL or mode == MODE_PEAK_SELL:
+                        new_mode = MODE_PEAK_CHARGE
+                        await self.operation_settings.override(
+                            new_mode, self.primary_peak_shaving_target_w, self.capacity_tariff
+                        )
+
             else:
                 await self.operation_settings.override(
                     new_state, self.primary_peak_shaving_target_w, self.capacity_tariff
@@ -514,6 +550,23 @@ class FerroAICompanionCoordinator:
             mode = await self.operation_settings.get_original_mode()
             self.sensor_original_mode.set(mode)
             _LOGGER.debug("Original mode = %s", mode)
+
+        # Handle Avoid Selling switch
+        if entity_id == ENTITY_KEY_AVOID_SELLING_SWITCH:
+            if self.select_companion_mode and self.select_companion_mode == MODE_AUTO:
+                if new_state is False:
+                    await self.operation_settings.stop_override()
+                else:
+                    mode = await self.operation_settings.get_mode()
+                    if mode == MODE_SELL or mode == MODE_PEAK_SELL:
+                        new_mode = MODE_PEAK_CHARGE
+                        await self.operation_settings.override(
+                            new_mode, self.primary_peak_shaving_target_w, self.capacity_tariff
+                        )
+                # Update the modes
+                mode = await self.operation_settings.get_mode()
+                self.sensor_mode.set(mode)
+                _LOGGER.debug("Mode = %s", mode)
 
         # Handle triggers
         # TODO: Add TRIGGERS
