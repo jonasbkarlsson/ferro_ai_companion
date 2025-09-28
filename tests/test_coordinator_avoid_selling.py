@@ -125,6 +125,7 @@ async def test_coordinator_avoid_selling(
     mock_operation_settings_fetch_all_data(
         discharge_threshold_w=coordinator.operation_settings.discharge_threshold_w,
         charge_threshold_w=coordinator.operation_settings.charge_threshold_w,
+        override_active=coordinator.operation_settings.override_active,
     )
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_SELL
@@ -148,6 +149,7 @@ async def test_coordinator_avoid_selling(
     mock_operation_settings_fetch_all_data(
         discharge_threshold_w=coordinator.operation_settings.discharge_threshold_w,
         charge_threshold_w=coordinator.operation_settings.charge_threshold_w,
+        override_active=coordinator.operation_settings.override_active,
     )
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_PEAK_SELL
@@ -171,6 +173,7 @@ async def test_coordinator_avoid_selling(
     mock_operation_settings_fetch_all_data(
         discharge_threshold_w=coordinator.operation_settings.discharge_threshold_w,
         charge_threshold_w=coordinator.operation_settings.charge_threshold_w,
+        override_active=coordinator.operation_settings.override_active,
     )
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_SELF
