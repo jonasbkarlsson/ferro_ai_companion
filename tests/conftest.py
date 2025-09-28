@@ -129,25 +129,38 @@ def bypass_is_during_intialization_fixture():
         yield
 
 
-async def mock_operation_settings_fetch_all_data(instance: OperationSettings):
-    """Mock function for operation_settings.fetch_all_data."""
-    print("Mock function executed!")
-    instance.max_soc = 100.0
-    instance.discharge_threshold_w = 1000
-    instance.charge_threshold_w = 500
-    instance.original_discharge_threshold_w = 1000
-    instance.original_charge_threshold_w = 500
-
-
-# This fixture will mock the function fetch_all_data in result in OperationSettings.
-@pytest.fixture(name="mock_operation_settings_fetch_all_data", autouse=True)
+@pytest.fixture(name="mock_operation_settings_fetch_all_data")
 def mock_operation_settings_fetch_all_data_fixture():
-    """Mock operation_settings.fetch_all_data."""
-    with patch(
-        "custom_components.ferro_ai_companion.helpers.operation_settings.OperationSettings.fetch_all_data",
-        new=mock_operation_settings_fetch_all_data,
+    """
+    Factory fixture to mock fetch_all_data with custom values.
+    Usage:
+        def test_something(mock_operation_settings_fetch_all_data):
+            mock_operation_settings_fetch_all_data(
+                max_soc=80, discharge_threshold_w=200, charge_threshold_w=100,
+                original_discharge_threshold_w=200, original_charge_threshold_w=100
+            )
+            ...
+    """
+    def _mock(
+        max_soc=100.0,
+        discharge_threshold_w=1000,
+        charge_threshold_w=500,
+        original_discharge_threshold_w=1000,
+        original_charge_threshold_w=500,
     ):
-        yield
+        async def _fetch_all_data(self: OperationSettings):
+            self.max_soc = max_soc
+            self.discharge_threshold_w = discharge_threshold_w
+            self.charge_threshold_w = charge_threshold_w
+            self.original_discharge_threshold_w = original_discharge_threshold_w
+            self.original_charge_threshold_w = original_charge_threshold_w
+
+        patcher = patch(
+            "custom_components.ferro_ai_companion.helpers.operation_settings.OperationSettings.fetch_all_data",
+            new=_fetch_all_data,
+        )
+        patcher.start()
+    yield _mock
 
 
 async def mock_solar_ev_charging_fetch_all_data(instance: SolarEVCharging):

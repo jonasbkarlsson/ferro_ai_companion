@@ -30,9 +30,16 @@ from tests.const import MOCK_CONFIG_ALL
 
 
 async def test_coordinator_is_nighttime(
-    hass: HomeAssistant, skip_service_calls, set_cet_timezone, freezer
+    hass: HomeAssistant, skip_service_calls, set_cet_timezone, freezer, mock_operation_settings_fetch_all_data
 ):
     """Test Coordinator is_nighttime."""
+    mock_operation_settings_fetch_all_data(
+        max_soc=90,
+        discharge_threshold_w=1000,
+        charge_threshold_w=500,
+        original_discharge_threshold_w=1000,
+        original_charge_threshold_w=500,
+    )
 
     freezer.move_to("2025-09-26T21:00:00+02:00")
 
