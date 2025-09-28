@@ -37,8 +37,6 @@ async def test_coordinator_is_nighttime(
         max_soc=90,
         discharge_threshold_w=1000,
         charge_threshold_w=500,
-        original_discharge_threshold_w=1000,
-        original_charge_threshold_w=500,
     )
 
     freezer.move_to("2025-09-26T21:00:00+02:00")

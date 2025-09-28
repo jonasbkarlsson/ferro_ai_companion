@@ -268,6 +268,20 @@ class FerroAICompanionCoordinator:
 
         # Fetch data
         await self.operation_settings.fetch_all_data()
+
+        # Handle avoid selling
+        if self.select_companion_mode == MODE_AUTO and self.switch_avoid_selling:
+            mode = await self.operation_settings.get_original_mode()
+            if self.operation_settings.override_active:
+                if mode not in [MODE_SELL, MODE_PEAK_SELL]:
+                    await self.operation_settings.stop_override()
+            else:
+                if mode in [MODE_SELL, MODE_PEAK_SELL]:
+                    new_mode = MODE_PEAK_CHARGE
+                    await self.operation_settings.override(
+                        new_mode, self.primary_peak_shaving_target_w, self.capacity_tariff
+                    )
+
         if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
             await self.solar_ev_charging.fetch_all_data()
 
@@ -418,7 +432,7 @@ class FerroAICompanionCoordinator:
 
     async def switch_avoid_selling_update(self, state: bool):
         """Handle the Avoid Selling switch"""
-        self.switch_ev_connected = state
+        self.switch_avoid_selling = state
         _LOGGER.debug("switch_avoid_selling_update = %s", state)
         await self.generate_event(ENTITY_KEY_AVOID_SELLING_SWITCH, not state, state)
 
@@ -515,6 +529,14 @@ class FerroAICompanionCoordinator:
             self.select_companion_mode = new_state
             if new_state == MODE_AUTO:
                 await self.operation_settings.stop_override()
+                if self.switch_avoid_selling:
+                    mode = await self.operation_settings.get_mode()
+                    if mode == MODE_SELL or mode == MODE_PEAK_SELL:
+                        new_mode = MODE_PEAK_CHARGE
+                        await self.operation_settings.override(
+                            new_mode, self.primary_peak_shaving_target_w, self.capacity_tariff
+                        )
+
             else:
                 await self.operation_settings.override(
                     new_state, self.primary_peak_shaving_target_w, self.capacity_tariff

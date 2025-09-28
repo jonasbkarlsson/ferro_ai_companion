@@ -137,7 +137,7 @@ def mock_operation_settings_fetch_all_data_fixture():
         def test_something(mock_operation_settings_fetch_all_data):
             mock_operation_settings_fetch_all_data(
                 max_soc=80, discharge_threshold_w=200, charge_threshold_w=100,
-                original_discharge_threshold_w=200, original_charge_threshold_w=100
+                override_active=False
             )
             ...
     """
@@ -145,15 +145,15 @@ def mock_operation_settings_fetch_all_data_fixture():
         max_soc=100.0,
         discharge_threshold_w=1000,
         charge_threshold_w=500,
-        original_discharge_threshold_w=1000,
-        original_charge_threshold_w=500,
+        override_active=False,
     ):
         async def _fetch_all_data(self: OperationSettings):
             self.max_soc = max_soc
-            self.discharge_threshold_w = discharge_threshold_w
-            self.charge_threshold_w = charge_threshold_w
-            self.original_discharge_threshold_w = original_discharge_threshold_w
-            self.original_charge_threshold_w = original_charge_threshold_w
+            if not override_active:
+                self.discharge_threshold_w = discharge_threshold_w
+                self.charge_threshold_w = charge_threshold_w
+            self.original_discharge_threshold_w = discharge_threshold_w
+            self.original_charge_threshold_w = charge_threshold_w
 
         patcher = patch(
             "custom_components.ferro_ai_companion.helpers.operation_settings.OperationSettings.fetch_all_data",

@@ -33,8 +33,6 @@ async def test_coordinator_avoid_selling(
         max_soc=90,
         discharge_threshold_w=1000,
         charge_threshold_w=500,
-        original_discharge_threshold_w=1000,
-        original_charge_threshold_w=500,
     )
 
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG_USER_TEMP1, entry_id="test")
@@ -127,8 +125,6 @@ async def test_coordinator_avoid_selling(
     mock_operation_settings_fetch_all_data(
         discharge_threshold_w=coordinator.operation_settings.discharge_threshold_w,
         charge_threshold_w=coordinator.operation_settings.charge_threshold_w,
-        original_discharge_threshold_w=coordinator.operation_settings.original_discharge_threshold_w ,
-        original_charge_threshold_w=coordinator.operation_settings.original_charge_threshold_w,
     )
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_SELL
@@ -152,8 +148,6 @@ async def test_coordinator_avoid_selling(
     mock_operation_settings_fetch_all_data(
         discharge_threshold_w=coordinator.operation_settings.discharge_threshold_w,
         charge_threshold_w=coordinator.operation_settings.charge_threshold_w,
-        original_discharge_threshold_w=coordinator.operation_settings.original_discharge_threshold_w ,
-        original_charge_threshold_w=coordinator.operation_settings.original_charge_threshold_w,
     )
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_PEAK_SELL
@@ -177,8 +171,6 @@ async def test_coordinator_avoid_selling(
     mock_operation_settings_fetch_all_data(
         discharge_threshold_w=coordinator.operation_settings.discharge_threshold_w,
         charge_threshold_w=coordinator.operation_settings.charge_threshold_w,
-        original_discharge_threshold_w=coordinator.operation_settings.original_discharge_threshold_w ,
-        original_charge_threshold_w=coordinator.operation_settings.original_charge_threshold_w,
     )
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_SELF
