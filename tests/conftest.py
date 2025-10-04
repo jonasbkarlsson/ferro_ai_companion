@@ -148,12 +148,23 @@ def mock_operation_settings_fetch_all_data_fixture():
         override_active=False,
     ):
         async def _fetch_all_data(self: OperationSettings):
-            self.max_soc = max_soc
-            if not override_active:
+            if max_soc > 0.0:
+                self.max_soc = max_soc
+            if override_active:
+                # If override is active and the threshold values have been changed,
+                # update the original values and restore the overridden thresholds.
+                if (
+                    discharge_threshold_w != self.discharge_threshold_w
+                    or charge_threshold_w != self.charge_threshold_w
+                ):
+                    self.original_discharge_threshold_w = discharge_threshold_w
+                    self.original_charge_threshold_w = charge_threshold_w
+            else:
+                # If override is not active, update both sets of values
                 self.discharge_threshold_w = discharge_threshold_w
                 self.charge_threshold_w = charge_threshold_w
-            self.original_discharge_threshold_w = discharge_threshold_w
-            self.original_charge_threshold_w = charge_threshold_w
+                self.original_discharge_threshold_w = discharge_threshold_w
+                self.original_charge_threshold_w = charge_threshold_w
 
         patcher = patch(
             "custom_components.ferro_ai_companion.helpers.operation_settings.OperationSettings.fetch_all_data",

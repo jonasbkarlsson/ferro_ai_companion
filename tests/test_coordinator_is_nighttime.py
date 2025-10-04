@@ -30,7 +30,11 @@ from tests.const import MOCK_CONFIG_ALL
 
 
 async def test_coordinator_is_nighttime(
-    hass: HomeAssistant, skip_service_calls, set_cet_timezone, freezer, mock_operation_settings_fetch_all_data
+    hass: HomeAssistant,
+    skip_service_calls,
+    set_cet_timezone,
+    freezer,
+    mock_operation_settings_fetch_all_data,
 ):
     """Test Coordinator is_nighttime."""
     mock_operation_settings_fetch_all_data(
@@ -66,14 +70,20 @@ async def test_coordinator_is_nighttime(
 
     new_state = MODE_SELF
     await coordinator.operation_settings.override(
-        new_state, coordinator.primary_peak_shaving_target_w, capacity_tariff
+        new_state,
+        coordinator.primary_peak_shaving_target_w,
+        coordinator.secondary_peak_shaving_target_w,
+        capacity_tariff,
     )
     assert coordinator.operation_settings.discharge_threshold_w == 0 + OVERRIDE_OFFSET
     assert coordinator.operation_settings.charge_threshold_w == 0 + OVERRIDE_OFFSET
 
     new_state = MODE_PEAK_CHARGE
     await coordinator.operation_settings.override(
-        new_state, coordinator.primary_peak_shaving_target_w, capacity_tariff
+        new_state,
+        coordinator.primary_peak_shaving_target_w,
+        coordinator.secondary_peak_shaving_target_w,
+        capacity_tariff,
     )
     assert (
         coordinator.operation_settings.discharge_threshold_w
@@ -83,7 +93,10 @@ async def test_coordinator_is_nighttime(
 
     new_state = MODE_PEAK_SELL
     await coordinator.operation_settings.override(
-        new_state, coordinator.primary_peak_shaving_target_w, capacity_tariff
+        new_state,
+        coordinator.primary_peak_shaving_target_w,
+        coordinator.secondary_peak_shaving_target_w,
+        capacity_tariff,
     )
     assert (
         coordinator.operation_settings.discharge_threshold_w
@@ -97,7 +110,10 @@ async def test_coordinator_is_nighttime(
 
     new_state = MODE_BUY
     await coordinator.operation_settings.override(
-        new_state, coordinator.primary_peak_shaving_target_w, capacity_tariff
+        new_state,
+        coordinator.primary_peak_shaving_target_w,
+        coordinator.secondary_peak_shaving_target_w,
+        capacity_tariff,
     )
     assert (
         coordinator.operation_settings.discharge_threshold_w
@@ -110,7 +126,10 @@ async def test_coordinator_is_nighttime(
     capacity_tariff = CAPACITY_TARIFF_SAME_DAY_NIGHT
 
     await coordinator.operation_settings.override(
-        new_state, coordinator.primary_peak_shaving_target_w, capacity_tariff
+        new_state,
+        coordinator.primary_peak_shaving_target_w,
+        coordinator.secondary_peak_shaving_target_w,
+        capacity_tariff,
     )
     assert (
         coordinator.operation_settings.discharge_threshold_w
@@ -129,7 +148,10 @@ async def test_coordinator_is_nighttime(
 
     freezer.move_to("2025-09-26T21:59:00+02:00")
     await coordinator.operation_settings.override(
-        new_state, coordinator.primary_peak_shaving_target_w, capacity_tariff
+        new_state,
+        coordinator.primary_peak_shaving_target_w,
+        coordinator.secondary_peak_shaving_target_w,
+        capacity_tariff,
     )
     assert (
         coordinator.operation_settings.discharge_threshold_w
@@ -146,7 +168,10 @@ async def test_coordinator_is_nighttime(
 
     freezer.move_to("2025-09-26T22:01:00+02:00")
     await coordinator.operation_settings.update_override(
-        new_state, coordinator.primary_peak_shaving_target_w, capacity_tariff
+        new_state,
+        coordinator.primary_peak_shaving_target_w,
+        coordinator.secondary_peak_shaving_target_w,
+        capacity_tariff,
     )
     assert (
         coordinator.operation_settings.discharge_threshold_w
@@ -163,7 +188,10 @@ async def test_coordinator_is_nighttime(
 
     freezer.move_to("2025-09-27T05:59:00+02:00")
     await coordinator.operation_settings.update_override(
-        new_state, coordinator.primary_peak_shaving_target_w, capacity_tariff
+        new_state,
+        coordinator.primary_peak_shaving_target_w,
+        coordinator.secondary_peak_shaving_target_w,
+        capacity_tariff,
     )
     assert (
         coordinator.operation_settings.discharge_threshold_w
@@ -180,7 +208,10 @@ async def test_coordinator_is_nighttime(
 
     freezer.move_to("2025-09-27T06:01:00+02:00")
     await coordinator.operation_settings.update_override(
-        new_state, coordinator.primary_peak_shaving_target_w, capacity_tariff
+        new_state,
+        coordinator.primary_peak_shaving_target_w,
+        coordinator.secondary_peak_shaving_target_w,
+        capacity_tariff,
     )
     assert (
         coordinator.operation_settings.discharge_threshold_w

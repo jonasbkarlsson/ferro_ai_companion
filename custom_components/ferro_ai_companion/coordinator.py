@@ -269,44 +269,6 @@ class FerroAICompanionCoordinator:
         # Fetch data
         await self.operation_settings.fetch_all_data()
 
-        # Handle avoid selling
-        if self.select_companion_mode == MODE_AUTO and self.switch_avoid_selling:
-            mode = await self.operation_settings.get_original_mode()
-            if self.operation_settings.override_active:
-                if mode not in [MODE_SELL, MODE_PEAK_SELL]:
-                    await self.operation_settings.stop_override()
-            else:
-                if mode in [MODE_SELL, MODE_PEAK_SELL]:
-                    new_mode = MODE_PEAK_CHARGE
-                    await self.operation_settings.override(
-                        new_mode, self.primary_peak_shaving_target_w, self.capacity_tariff
-                    )
-
-        if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
-            await self.solar_ev_charging.fetch_all_data()
-
-        _LOGGER.debug(
-            "self.operation_settings.original_discharge_threshold = %s",
-            self.operation_settings.original_discharge_threshold_w,
-        )
-        _LOGGER.debug(
-            "self.operation_settings.original_charge_threshold = %s",
-            self.operation_settings.original_charge_threshold_w,
-        )
-
-        # Update the modes
-        mode = await self.operation_settings.get_mode()
-        self.sensor_mode.set(mode)
-        _LOGGER.debug("Mode = %s", mode)
-
-        await self.operation_settings.update_override(
-            mode, self.primary_peak_shaving_target_w, self.capacity_tariff
-        )
-
-        mode = await self.operation_settings.get_original_mode()
-        self.sensor_original_mode.set(mode)
-        _LOGGER.debug("Original mode = %s", mode)
-
         # Update the peak shaving targets
         self.update_peak_shaving_targets()
 
@@ -350,6 +312,50 @@ class FerroAICompanionCoordinator:
             self.sensor_secondary_peak_shaving_target.set(
                 self.secondary_peak_shaving_target_w
             )
+
+        # Handle avoid selling
+        if self.select_companion_mode == MODE_AUTO and self.switch_avoid_selling:
+            mode = await self.operation_settings.get_original_mode()
+            if self.operation_settings.override_active:
+                if mode not in [MODE_SELL, MODE_PEAK_SELL]:
+                    await self.operation_settings.stop_override()
+            else:
+                if mode in [MODE_SELL, MODE_PEAK_SELL]:
+                    new_mode = MODE_PEAK_CHARGE
+                    await self.operation_settings.override(
+                        new_mode,
+                        self.primary_peak_shaving_target_w,
+                        self.secondary_peak_shaving_target_w,
+                        self.capacity_tariff,
+                    )
+
+        if get_parameter(self.config_entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
+            await self.solar_ev_charging.fetch_all_data()
+
+        _LOGGER.debug(
+            "self.operation_settings.original_discharge_threshold = %s",
+            self.operation_settings.original_discharge_threshold_w,
+        )
+        _LOGGER.debug(
+            "self.operation_settings.original_charge_threshold = %s",
+            self.operation_settings.original_charge_threshold_w,
+        )
+
+        # Update the modes
+        mode = await self.operation_settings.get_mode()
+        self.sensor_mode.set(mode)
+        _LOGGER.debug("Mode = %s", mode)
+
+        await self.operation_settings.update_override(
+            mode,
+            self.primary_peak_shaving_target_w,
+            self.secondary_peak_shaving_target_w,
+            self.capacity_tariff,
+        )
+
+        mode = await self.operation_settings.get_original_mode()
+        self.sensor_original_mode.set(mode)
+        _LOGGER.debug("Original mode = %s", mode)
 
     def update_peak_shaving_targets(self):
         """Update the peak shaving targets based on the current operation settings."""
@@ -534,12 +540,18 @@ class FerroAICompanionCoordinator:
                     if mode == MODE_SELL or mode == MODE_PEAK_SELL:
                         new_mode = MODE_PEAK_CHARGE
                         await self.operation_settings.override(
-                            new_mode, self.primary_peak_shaving_target_w, self.capacity_tariff
+                            new_mode,
+                            self.primary_peak_shaving_target_w,
+                            self.secondary_peak_shaving_target_w,
+                            self.capacity_tariff,
                         )
 
             else:
                 await self.operation_settings.override(
-                    new_state, self.primary_peak_shaving_target_w, self.capacity_tariff
+                    new_state,
+                    self.primary_peak_shaving_target_w,
+                    self.secondary_peak_shaving_target_w,
+                    self.capacity_tariff,
                 )
 
             # Update the modes
@@ -561,7 +573,10 @@ class FerroAICompanionCoordinator:
                     if mode == MODE_SELL or mode == MODE_PEAK_SELL:
                         new_mode = MODE_PEAK_CHARGE
                         await self.operation_settings.override(
-                            new_mode, self.primary_peak_shaving_target_w, self.capacity_tariff
+                            new_mode,
+                            self.primary_peak_shaving_target_w,
+                            self.secondary_peak_shaving_target_w,
+                            self.capacity_tariff,
                         )
                 # Update the modes
                 mode = await self.operation_settings.get_mode()
