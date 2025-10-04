@@ -27,17 +27,24 @@ from tests.const import MOCK_CONFIG_USER_TEMP1
 
 
 async def test_coordinator_avoid_selling2(
-    hass: HomeAssistant, skip_service_calls, mock_operation_settings_fetch_all_data
+    hass: HomeAssistant,
+    skip_service_calls,
+    set_cet_timezone,
+    freezer,
+    mock_operation_settings_fetch_all_data,
 ):
     """Test Coordinator avoid selling."""
 
+    freezer.move_to("2025-10-04T12:10:00+02:00")
     mock_operation_settings_fetch_all_data(
         max_soc=90,
         discharge_threshold_w=1000,
         charge_threshold_w=500,
     )
 
-    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG_USER_TEMP1, entry_id="test")
+    config_entry = MockConfigEntry(
+        domain=DOMAIN, data=MOCK_CONFIG_USER_TEMP1, entry_id="test"
+    )
     config_entry.mock_state(hass=hass, state=ConfigEntryState.LOADED)
     config_entry.add_to_hass(hass)
     assert await async_setup_entry(hass, config_entry)
@@ -74,14 +81,20 @@ async def test_coordinator_avoid_selling2(
     # MODE_AUTO with self
     coordinator.operation_settings.discharge_threshold_w = 0
     coordinator.operation_settings.charge_threshold_w = 0
-    coordinator.operation_settings.original_discharge_threshold_w = coordinator.operation_settings.discharge_threshold_w
-    coordinator.operation_settings.original_charge_threshold_w = coordinator.operation_settings.charge_threshold_w
+    coordinator.operation_settings.original_discharge_threshold_w = (
+        coordinator.operation_settings.discharge_threshold_w
+    )
+    coordinator.operation_settings.original_charge_threshold_w = (
+        coordinator.operation_settings.charge_threshold_w
+    )
     mock_operation_settings_fetch_all_data(
         discharge_threshold_w=coordinator.operation_settings.discharge_threshold_w,
         charge_threshold_w=coordinator.operation_settings.charge_threshold_w,
         override_active=coordinator.operation_settings.override_active,
     )
-    await coordinator.generate_event(ENTITY_KEY_COMPANION_MODE_SELECT, new_state=MODE_AUTO)
+    await coordinator.generate_event(
+        ENTITY_KEY_COMPANION_MODE_SELECT, new_state=MODE_AUTO
+    )
     assert coordinator.select_companion_mode == MODE_AUTO
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_SELF
@@ -94,46 +107,79 @@ async def test_coordinator_avoid_selling2(
     assert mode == MODE_SELF
 
     # MODE_BUY
-    await coordinator.generate_event(ENTITY_KEY_COMPANION_MODE_SELECT, new_state=MODE_BUY)
+    await coordinator.generate_event(
+        ENTITY_KEY_COMPANION_MODE_SELECT, new_state=MODE_BUY
+    )
     assert coordinator.select_companion_mode == MODE_BUY
-    assert coordinator.operation_settings.discharge_threshold_w == 1000 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
-    assert coordinator.operation_settings.charge_threshold_w == 1000 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
+    assert (
+        coordinator.operation_settings.discharge_threshold_w
+        == 1000 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
+    )
+    assert (
+        coordinator.operation_settings.charge_threshold_w
+        == 1000 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
+    )
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_BUY
 
     # Avoid selling = False, threshold should remain changed
     await coordinator.switch_avoid_selling_update(False)
-    assert coordinator.operation_settings.discharge_threshold_w == 1000 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
-    assert coordinator.operation_settings.charge_threshold_w == 1000 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
+    assert (
+        coordinator.operation_settings.discharge_threshold_w
+        == 1000 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
+    )
+    assert (
+        coordinator.operation_settings.charge_threshold_w
+        == 1000 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
+    )
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_BUY
 
     # Avoid selling = True, threshold should remain changed
     await coordinator.switch_avoid_selling_update(True)
-    assert coordinator.operation_settings.discharge_threshold_w == 1000 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
-    assert coordinator.operation_settings.charge_threshold_w == 1000 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
+    assert (
+        coordinator.operation_settings.discharge_threshold_w
+        == 1000 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
+    )
+    assert (
+        coordinator.operation_settings.charge_threshold_w
+        == 1000 + BUY_POWER_OFFSET + OVERRIDE_OFFSET
+    )
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_BUY
 
     # MODE_SELL
-    await coordinator.generate_event(ENTITY_KEY_COMPANION_MODE_SELECT, new_state=MODE_SELL)
+    await coordinator.generate_event(
+        ENTITY_KEY_COMPANION_MODE_SELECT, new_state=MODE_SELL
+    )
     assert coordinator.select_companion_mode == MODE_SELL
-    assert coordinator.operation_settings.discharge_threshold_w == -100000 + OVERRIDE_OFFSET
-    assert coordinator.operation_settings.charge_threshold_w == -100000 + OVERRIDE_OFFSET
+    assert (
+        coordinator.operation_settings.discharge_threshold_w
+        == -100000 + OVERRIDE_OFFSET
+    )
+    assert (
+        coordinator.operation_settings.charge_threshold_w == -100000 + OVERRIDE_OFFSET
+    )
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_SELL
 
     # MODE_AUTO with sell
     coordinator.operation_settings.discharge_threshold_w = -100000
     coordinator.operation_settings.charge_threshold_w = -100000
-    coordinator.operation_settings.original_discharge_threshold_w = coordinator.operation_settings.discharge_threshold_w
-    coordinator.operation_settings.original_charge_threshold_w = coordinator.operation_settings.charge_threshold_w
+    coordinator.operation_settings.original_discharge_threshold_w = (
+        coordinator.operation_settings.discharge_threshold_w
+    )
+    coordinator.operation_settings.original_charge_threshold_w = (
+        coordinator.operation_settings.charge_threshold_w
+    )
     mock_operation_settings_fetch_all_data(
         discharge_threshold_w=coordinator.operation_settings.discharge_threshold_w,
         charge_threshold_w=coordinator.operation_settings.charge_threshold_w,
         override_active=coordinator.operation_settings.override_active,
     )
-    await coordinator.generate_event(ENTITY_KEY_COMPANION_MODE_SELECT, new_state=MODE_AUTO)
+    await coordinator.generate_event(
+        ENTITY_KEY_COMPANION_MODE_SELECT, new_state=MODE_AUTO
+    )
     assert coordinator.select_companion_mode == MODE_AUTO
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_PEAK_CHARGE
@@ -147,7 +193,9 @@ async def test_coordinator_avoid_selling2(
 
     # Avoid selling = True, threshold should change
     await coordinator.switch_avoid_selling_update(True)
-    assert coordinator.operation_settings.discharge_threshold_w == 1000 + OVERRIDE_OFFSET
+    assert (
+        coordinator.operation_settings.discharge_threshold_w == 1000 + OVERRIDE_OFFSET
+    )
     assert coordinator.operation_settings.charge_threshold_w == 0 + OVERRIDE_OFFSET
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_PEAK_CHARGE
@@ -173,7 +221,9 @@ async def test_coordinator_avoid_selling2(
         override_active=coordinator.operation_settings.override_active,
     )
     await coordinator.update_quarterly()
-    assert coordinator.operation_settings.discharge_threshold_w == 1000 + OVERRIDE_OFFSET
+    assert (
+        coordinator.operation_settings.discharge_threshold_w == 1000 + OVERRIDE_OFFSET
+    )
     assert coordinator.operation_settings.charge_threshold_w == 0 + OVERRIDE_OFFSET
     mode = await coordinator.operation_settings.get_mode()
     assert mode == MODE_PEAK_CHARGE
