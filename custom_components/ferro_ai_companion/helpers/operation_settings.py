@@ -123,11 +123,27 @@ class OperationSettings:
                     discharge_threshold_w != self.discharge_threshold_w
                     or charge_threshold_w != self.charge_threshold_w
                 ):
+                    _LOGGER.debug(
+                        "In fetch_all_data: Override active=%s, discharge_threshold_w=%s, charge_threshold_w=%s, self.discharge_threshold_w=%s, self.charge_threshold_w=%s.",
+                        self.override_active,
+                        discharge_threshold_w,
+                        charge_threshold_w,
+                        self.discharge_threshold_w,
+                        self.charge_threshold_w,
+                    )
+
                     self.original_discharge_threshold_w = discharge_threshold_w
                     self.original_charge_threshold_w = charge_threshold_w
                     # Restore the overridden thresholds
                     await self.update_thresholds()
             else:
+                _LOGGER.debug(
+                    "In fetch_all_data: Override active=%s, discharge_threshold_w=%s, charge_threshold_w=%s.",
+                    self.override_active,
+                    discharge_threshold_w,
+                    charge_threshold_w,
+                )
+
                 # If override is not active, update both sets of values
                 self.discharge_threshold_w = discharge_threshold_w
                 self.charge_threshold_w = charge_threshold_w
