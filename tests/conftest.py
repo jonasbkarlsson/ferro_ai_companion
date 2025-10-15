@@ -118,6 +118,16 @@ def skip_update_initial_fixture():
         yield
 
 
+# This fixture is used to prevent calls to pace_update_thresholds().
+@pytest.fixture(name="skip_pace_update_thresholds", autouse=True)
+def skip_pace_update_thresholds_fixture():
+    """Skip pace_update_thresholds."""
+    with patch(
+        "custom_components.ferro_ai_companion.helpers.operation_settings.OperationSettings.pace_update_thresholds"
+    ):
+        yield
+
+
 # This fixture will result in calls to is_during_intialization to return False.
 @pytest.fixture(name="bypass_is_during_intialization", autouse=True)
 def bypass_is_during_intialization_fixture():
@@ -141,6 +151,7 @@ def mock_operation_settings_fetch_all_data_fixture():
             )
             ...
     """
+
     def _mock(
         max_soc=100.0,
         discharge_threshold_w=1000,
@@ -171,6 +182,7 @@ def mock_operation_settings_fetch_all_data_fixture():
             new=_fetch_all_data,
         )
         patcher.start()
+
     yield _mock
 
 
