@@ -18,6 +18,7 @@ from homeassistant.helpers.entity_registry import (
 from homeassistant.helpers.entity_registry import (
     EntityRegistry,
 )
+from homeassistant.util import dt
 
 from custom_components.ferro_ai_companion.helpers.general import is_nighttime
 
@@ -60,6 +61,8 @@ class OperationSettings:
         self.override_active = False
         self.original_discharge_threshold_w = 0
         self.original_charge_threshold_w = 0
+
+        self._last_update_thresholds = None  # Track last update time
 
         if entity_id:
             entity_registry: EntityRegistry = async_entity_registry_get(hass)
@@ -113,6 +116,16 @@ class OperationSettings:
             charge_threshold_w = float(
                 self._hass.states.get(self._number_charge_threshold).state
             )
+
+            _LOGGER.debug(
+                "In fetch_all_data: Override active=%s, discharge_threshold_w=%s, charge_threshold_w=%s, self.discharge_threshold_w=%s, self.charge_threshold_w=%s.",
+                self.override_active,
+                discharge_threshold_w,
+                charge_threshold_w,
+                self.discharge_threshold_w,
+                self.charge_threshold_w,
+            )
+
             max_soc = float(self._hass.states.get(self._number_max_soc).state)
             if max_soc > 0.0:
                 self.max_soc = max_soc
@@ -237,11 +250,21 @@ class OperationSettings:
         self.charge_threshold_w = self.original_charge_threshold_w
         await self.update_thresholds()
 
+    async def pace_update_thresholds(self) -> None:
+        """Pace the update of thresholds to not more often than once per 10 seconds."""
+        now = dt.now().timestamp()
+        if self._last_update_thresholds and (now - self._last_update_thresholds < 10):
+            _LOGGER.debug("pace_update_thresholds called too soon; waiting.")
+            await asyncio.sleep(10 - (now - self._last_update_thresholds))
+        self._last_update_thresholds = now
+
     async def update_thresholds(self) -> None:
         """Update the thresholds."""
         _LOGGER.debug("Updating thresholds.")
         _LOGGER.debug("self.discharge_threshold_w = %s", self.discharge_threshold_w)
         _LOGGER.debug("self.charge_threshold_w = %s", self.charge_threshold_w)
+
+        await self.pace_update_thresholds()
 
         await self._hass.services.async_call(
             domain="number",
