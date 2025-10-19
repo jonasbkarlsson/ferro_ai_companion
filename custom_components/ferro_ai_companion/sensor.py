@@ -2,7 +2,11 @@
 
 import logging
 
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorDeviceClass,
+    SensorStateClass,
+)
 from homeassistant.const import STATE_ON, STATE_OFF
 from homeassistant.core import HomeAssistant
 
@@ -13,6 +17,7 @@ from .const import (
     CONF_SOLAR_EV_CHARGING_ENABLED,
     DOMAIN,
     ENTITY_KEY_CHARGING_CURRENT_SENSOR,
+    ENTITY_KEY_CURRENT_PEAK_SHAVING_TARGET_SENSOR,
     ENTITY_KEY_MODE_SENSOR,
     ENTITY_KEY_ORIGINAL_MODE_SENSOR,
     ENTITY_KEY_PEAK_SHAVING_TARGET_SENSOR,
@@ -36,6 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_devices):
     sensors.append(FerroAICompanionSensorMode(entry))
     sensors.append(FerroAICompanionSensorPeakShavingTarget(entry))
     sensors.append(FerroAICompanionSensorSecondaryPeakShavingTarget(entry))
+    sensors.append(FerroAICompanionSensorCurrentPeakShavingTarget(entry))
     sensors.append(FerroAICompanionSensorOriginalMode(entry))
     if get_parameter(entry, CONF_SOLAR_EV_CHARGING_ENABLED, False):
         sensors.append(FerroAICompanionSensorChargingCurrent(entry))
@@ -115,6 +121,22 @@ class FerroAICompanionSensorSecondaryPeakShavingTarget(FerroAICompanionSensor):
 
     def __init__(self, entry):
         _LOGGER.debug("FerroAICompanionSensorSecondaryPeakShavingTarget.__init__()")
+        #        self._attr_native_value = 0
+        super().__init__(entry)
+
+
+class FerroAICompanionSensorCurrentPeakShavingTarget(FerroAICompanionSensor):
+    """Ferro AI Companion sensor class."""
+
+    _entity_key = ENTITY_KEY_CURRENT_PEAK_SHAVING_TARGET_SENSOR
+    _attr_icon = ICON_POWER_TARGET
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = "W"
+    _attr_suggested_display_precision = 0
+
+    def __init__(self, entry):
+        _LOGGER.debug("FerroAICompanionSensorCurrentPeakShavingTarget.__init__()")
         #        self._attr_native_value = 0
         super().__init__(entry)
 
