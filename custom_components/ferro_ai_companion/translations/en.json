@@ -115,6 +115,9 @@
             "secondary_peak_shaving_target": {
                 "name": "Secondary peak shaving target"
             },
+            "current_peak_shaving_target": {
+                "name": "Current peak shaving target"
+            },
             "solar_ev_charging": {
                 "name": "Solar EV charging"
             },

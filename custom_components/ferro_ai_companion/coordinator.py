@@ -53,11 +53,13 @@ from .const import (
     MODE_PEAK_SELL,
     MODE_SELL,
 )
-from .helpers.general import Validator, get_parameter
+from .helpers.general import Validator, get_parameter, is_nighttime
+
 from .helpers.operation_settings import OperationSettings
 from .helpers.solar_ev_charging import SolarEVCharging
 from .sensor import (
     FerroAICompanionSensor,
+    FerroAICompanionSensorCurrentPeakShavingTarget,
     FerroAICompanionSensorMode,
     FerroAICompanionSensorChargingCurrent,
     FerroAICompanionSensorOriginalMode,
@@ -92,6 +94,7 @@ class FerroAICompanionCoordinator:
         self.sensor_original_mode = None
         self.sensor_peak_shaving_target = None
         self.sensor_secondary_peak_shaving_target = None
+        self.sensor_current_peak_shaving_target = None
         self.sensor_charging_current = None
         self.sensor_solar_ev_charging = None
 
@@ -149,14 +152,14 @@ class FerroAICompanionCoordinator:
             )
         )
         # Generate triggers every 5 minutes.
-        # self.listeners.append(
-        #     async_track_time_change(
-        #         hass,
-        #         self.update_every_five_minutes,
-        #         minute=[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
-        #         second=0,
-        #     )
-        # )
+        self.listeners.append(
+            async_track_time_change(
+                hass,
+                self.update_every_five_minutes,
+                minute=[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
+                second=0,
+            )
+        )
         # Listen for changes to the device.
         self.listeners.append(
             hass.bus.async_listen(EVENT_DEVICE_REGISTRY_UPDATED, self.device_updated)
@@ -256,6 +259,30 @@ class FerroAICompanionCoordinator:
     ):  # pylint: disable=unused-argument
         """Called every five minutes"""
         _LOGGER.debug("FerroAICompanionCoordinator.update_every_five_minutes()")
+
+        # Update the current peak shaving target sensor
+        try:
+            current_target = float(self.sensor_current_peak_shaving_target.state)
+        except (TypeError, ValueError):
+            current_target = None
+
+        new_target: float = 0.0
+
+        if self.capacity_tariff == CAPACITY_TARIFF_SAME_DAY_NIGHT:
+            new_target = float(self.primary_peak_shaving_target_w)
+
+        elif self.capacity_tariff == CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT:
+            if is_nighttime():
+                new_target = float(self.secondary_peak_shaving_target_w)
+            else:
+                new_target = float(self.primary_peak_shaving_target_w)
+
+        # Update only if value changed or not set
+        if current_target is None or abs(current_target - new_target) > 1e-6:
+            self.sensor_current_peak_shaving_target.set(new_target)
+            _LOGGER.debug("Set current_peak_shaving_target to %.0f", new_target)
+
+        # Handle solar EV charging conditions
         if self.solar_ev_charging:
             await self.solar_ev_charging.solar_start_conditions()
 
@@ -607,6 +634,8 @@ class FerroAICompanionCoordinator:
                 self.sensor_peak_shaving_target = sensor
             if isinstance(sensor, FerroAICompanionSensorSecondaryPeakShavingTarget):
                 self.sensor_secondary_peak_shaving_target = sensor
+            if isinstance(sensor, FerroAICompanionSensorCurrentPeakShavingTarget):
+                self.sensor_current_peak_shaving_target = sensor
             if isinstance(sensor, FerroAICompanionSensorChargingCurrent):
                 self.sensor_charging_current = sensor
             if isinstance(sensor, FerroAICompanionSensorSolarEVCharging):
