@@ -68,8 +68,9 @@ Entity | Type | Description
 -- | -- | --
 `sensor.ferro_ai_companion_energyhub_mode` | Sensor | Operation mode used by EnergyHub. Will be the same as the `Ferro AI mode` if `Companion mode` is set to `Auto`. Can be `Peak shaving with charging`, `Peak shaving with selling`, `Self consumption`, `Buy` or `Sell`.
 `sensor.ferro_ai_companion_ferro_ai_mode` | Sensor | Operation mode choosen by Ferro AI. Can be `Peak shaving with charging`, `Peak shaving with selling`, `Self consumption`, `Buy` or `Sell`.
-`sensor.ferro_ai_companion_peak_shaving_target` | Sensor | The peak shaving threshold used by Ferro AI to reduce peak power.
+`sensor.ferro_ai_companion_peak_shaving_target` | Sensor | The peak shaving threshold used by Ferro AI to reduce peak power. If Ferro AI is configured to reduce peak power to two different levels (one during day, one during night), this sensor will show the day threshold.
 `sensor.ferro_ai_companion_secondary_peak_shaving_target` | Sensor | If Ferro AI is configured to reduce peak power to two different levels (one during day, one during night), this sensor will show the night threshold.
+`sensor.ferro_ai_companion_current_peak_shaving_target` | Sensor | The current peak shaving target, if capacity-based tariffs are configured. Useful if Ferro AI is configured to reduce peak power to two different levels.
 `switch.select.ferro_ai_companion_companion_mode` | Select | If set to `Auto`, Ferro AI will control EnergyHub mode. Override by setting to `Peak shaving with charging`, `Peak shaving with selling`, `Self consumption`, `Buy` or `Sell`.
 `switch.ferro_ai_companion_avoid_selling` | Switch | When companion mode is set to `Auto`, turning this switch on will avoid selling. If Ferro AI use `Peak shaving with selling` or `Sell`, it will be override with `Peak shaving with charging`.
 
