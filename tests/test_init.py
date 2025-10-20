@@ -31,8 +31,19 @@ from .const import (
 
 # pylint: disable=unused-argument
 # async def test_setup_unload_and_reload_entry(hass, bypass_get_data):
-async def test_setup_unload_and_reload_entry(hass, bypass_validate_input):
+async def test_setup_unload_and_reload_entry(
+    hass,
+    bypass_validate_input,
+    mock_operation_settings_fetch_all_data,
+    skip_service_calls,
+):
     """Test entry setup and unload."""
+    mock_operation_settings_fetch_all_data(
+        max_soc=90,
+        discharge_threshold_w=6011,
+        charge_threshold_w=0,
+    )
+
     # Create a mock entry so we don't have to go through config flow
     config_entry = MockConfigEntry(
         domain=DOMAIN,
@@ -82,8 +93,19 @@ async def test_setup_entry_exception(hass):
         assert await async_setup_entry(hass, config_entry)
 
 
-async def test_setup_with_migration_v1(hass, bypass_validate_input):
+async def test_setup_with_migration_v1(
+    hass,
+    bypass_validate_input,
+    mock_operation_settings_fetch_all_data,
+    skip_service_calls,
+):
     """Test entry migration."""
+    mock_operation_settings_fetch_all_data(
+        max_soc=90,
+        discharge_threshold_w=6011,
+        charge_threshold_w=0,
+    )
+
     # Create a mock entry so we don't have to go through config flow
     config_entry = MockConfigEntry(
         domain=DOMAIN,
@@ -135,8 +157,19 @@ async def test_setup_with_migration_from_future(hass, bypass_validate_input):
     assert not await async_migrate_entry(hass, config_entry)
 
 
-async def test_setup_new_integration_name(hass, bypass_validate_input):
+async def test_setup_new_integration_name(
+    hass,
+    bypass_validate_input,
+    mock_operation_settings_fetch_all_data,
+    skip_service_calls,
+):
     """Test entry setup with new integration name."""
+    mock_operation_settings_fetch_all_data(
+        max_soc=90,
+        discharge_threshold_w=6011,
+        charge_threshold_w=0,
+    )
+
     # Create a mock entry so we don't have to go through config flow
     config_entry = MockConfigEntry(
         domain=DOMAIN,

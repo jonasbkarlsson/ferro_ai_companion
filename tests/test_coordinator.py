@@ -16,9 +16,19 @@ from tests.const import MOCK_CONFIG_ALL
 
 # pylint: disable=unused-argument
 async def test_coordinator(
-    hass: HomeAssistant, skip_service_calls, set_cet_timezone, bypass_validate_input
+    hass: HomeAssistant,
+    skip_service_calls,
+    set_cet_timezone,
+    bypass_validate_input,
+    mock_operation_settings_fetch_all_data,
 ):
     """Test Coordinator."""
+
+    mock_operation_settings_fetch_all_data(
+        max_soc=90,
+        discharge_threshold_w=6011,
+        charge_threshold_w=0,
+    )
 
     #    entity_registry: EntityRegistry = async_entity_registry_get(hass)
 

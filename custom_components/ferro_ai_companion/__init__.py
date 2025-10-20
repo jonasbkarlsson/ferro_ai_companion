@@ -20,6 +20,8 @@ from .const import (
     CAPACITY_TARIFF_DIFFERENT_DAY_NIGHT,
     CONF_CAPACITY_TARIFF,
     DOMAIN,
+    ENTITY_KEY_COMPANION_MODE_SELECT,
+    MODE_AUTO,
     STARTUP_MESSAGE,
     PLATFORMS,
 )
@@ -79,6 +81,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
     _LOGGER.debug("async_unload_entry")
     coordinator = hass.data[DOMAIN][entry.entry_id]
+
+    # Before unload, change mode to AUTO to avoid issues on next load
+    await coordinator.generate_event(
+        ENTITY_KEY_COMPANION_MODE_SELECT, new_state=MODE_AUTO
+    )
+
     unloaded = all(
         await asyncio.gather(
             *[
